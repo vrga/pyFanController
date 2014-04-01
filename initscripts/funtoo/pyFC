@@ -1,0 +1,22 @@
+#!/sbin/runscript 
+
+exec='/home/vrga/projects/pyFC/pyFC.py'
+pidfile="/var/run/pyFC.pid"
+
+depend() { 
+  need localmount
+  after bootmisc
+} 
+
+start() { 
+ ebegin "Starting fan controller" 
+ start-stop-daemon --start --name pyFC --exec "$exec" --pidfile "$pidfile" -w 10 --background
+ eend $? 
+} 
+
+stop() { 
+ ebegin "Stopping fan controller" 
+ start-stop-daemon --stop --pidfile "$pidfile"
+# kill SIGTERM  
+ eend $? 
+}
