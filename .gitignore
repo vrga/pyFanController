@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+*.kate-swp
+.directory
+*~
+*.kdev4
+.kdev4/
