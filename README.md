@@ -23,4 +23,11 @@ It is partially my way of learning to code in python and
 actually familiarizing myself with principles of OOP.
 
 Provided initscript is only gentoo/funtoo compatible at the moment,
-depending on python 3.3 and numpy
+depending on python 3.3 and numpy.
+You can provide whatever sources and sinks you wish through the config file.
+Currently in use by me personally: lm-sensors, hddtemp, serial.
+
+if you will use the serial one, please check out serialFC.py to see if you can work with the data it spits out.
+pyserial will also be most likely required.
+
+currently its of the form of 1/255/ aka <fan controller number>/<fan speed>/
