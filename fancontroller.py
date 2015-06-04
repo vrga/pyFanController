@@ -112,9 +112,9 @@ class FanController(object):
         """
         if data.getboolean('serial'):
             global extras
-            import serialFC
+            import serialfc
 
-            tmp = serialFC.SerialFC()
+            tmp = serialfc.SerialFC()
             extras.update({'serial': tmp})
         """
             Set the running interval for the loop,
