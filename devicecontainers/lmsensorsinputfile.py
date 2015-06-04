@@ -3,10 +3,12 @@ import logging
 from .inputdevice import InputDevice
 
 
-class LMSensorsFile(InputDevice):
+class LMSensorsInputFile(InputDevice):
     """
     Class to handle access to temperatures from lm-sensors
     Because the py3sensors thing is a bit clunky...
+    Check http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/plain/Documentation/hwmon/sysfs-interface?id=HEAD
+    for details.
     """
 
     def __init__(self, file_path):
