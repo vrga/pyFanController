@@ -5,21 +5,17 @@ import time
 import sys
 import configparser
 import device
+import logging
 
-from numpy import interp
-
-debug = False
 extras = dict()
 
-def logMe(*value):
-    if debug:
-        print(value)
-"""
-    Basic Fan Control class. The setup magic happens here.
-"""
 class FanController(object):
+    """
+    Basic Fan Control class. The setup magic happens here.
+    """
+
     def __init__(self):
-        #grab config files, setup PID, basic stuff.
+        # grab config files, setup PID, basic stuff.
         self.devices = dict()
         self.workDir = '/home/vrga/projects/pyFC/'
         os.chdir(self.workDir)
@@ -30,66 +26,67 @@ class FanController(object):
         # start the main program loop.
         self.runLoop()
 
-    """
+    def createPid(self):
+        """
         Set up the PID and dont run if we dont manage to write the soggy thing!
         TODO: do better with exceptions...
-    """
-    def createPid(self):
+        """
         try:
             if os.path.exists(self.pidFile):
                 raise RuntimeError('PID file exists, bugging out! Check if pyFC is running?')
             try:
                 with open(self.pidFile, 'w') as PID:
                     self.pid = os.getpid()
-                    logMe('PID: ', self.pid)
-                    PID.write(str(self.pid)+'\n')
+                    # logMe('PID: ', self.pid)
+                    PID.write(str(self.pid) + '\n')
             except:
                 sys.exit('Failed writing PID file')
         except RuntimeError:
             sys.exit(RuntimeError)
 
-    """
-        Kill the PID file... 
-        TODO: probably a better exception catch here, but eh.
-    """
     def removePid(self):
+        """
+        Kill the PID file...
+        TODO: probably a better exception catch here, but eh.
+        """
         try:
             os.remove(self.pidFile)
         except OSError:
             pass
 
-    """
+    def readConfig(self):
+        """
         Basic configuration file parsing.
         Thank the heavens for the configparser module...
-    """
-    def readConfig(self):
+        """
         config = configparser.ConfigParser()
 
         config.read(self.configFile)
         self.setupBase(config['base'])
 
-        logMe(config.sections())
+        # logMe(config.sections())
         """
             Here we set up devices, if their config section is actually enabled.
             TODO: check what happens with borked config files...
         """
         # temporarily commented out... probably will stay that way XD
-        #for deviceConfig in config.sections():
-            #if deviceConfig is not 'base' or config[deviceConfig].getboolean('enabled'):
-                #self.devices.update({deviceConfig: device.Device(config[deviceConfig], extras)})
-                
+        # for deviceConfig in config.sections():
+        # if deviceConfig is not 'base' or config[deviceConfig].getboolean('enabled'):
+        #     self.devices.update({deviceConfig: device.Device(config[deviceConfig], extras)})
+
         for deviceConfig in config.sections():
             if deviceConfig == 'base' or config[deviceConfig].getboolean('enabled') == False:
                 pass
             else:
-                self.devices.update({ deviceConfig: device.Device(config[deviceConfig],extras)} )
-    """
-        continued setup
-    """
+                self.devices.update({deviceConfig: device.Device(config[deviceConfig], extras)})
+
     def setupBase(self, data):
         """
-            If debugging we do not run the loop.
+            continued setup
         """
+
+        # If debugging we do not run the loop.
+
         if data.getboolean('debug'):
             global debug
             debug = data.getboolean('debug')
@@ -105,8 +102,9 @@ class FanController(object):
         if data.getboolean('hddtemp'):
             global extras
             import hddtempSocket as hddt
+
             tmp = hddt.hddtemp()
-            extras.update({'hddtemp' :tmp})
+            extras.update({'hddtemp': tmp})
         """
             Conditional import of the module i've devised
             to work with my homebrew Atmega 8 - 16 based PWM fan controller.
@@ -115,6 +113,7 @@ class FanController(object):
         if data.getboolean('serial'):
             global extras
             import serialFC
+
             tmp = serialFC.SerialFC()
             extras.update({'serial': tmp})
         """
@@ -126,34 +125,36 @@ class FanController(object):
         else:
             self.interval = 5
 
-    """
+    def runOnce(self):
+        """
         Run the program once to see if it will actually even work...
         TODO: rewrite the runOnce and runLoop to restore values they
               originally found when exiting.
-    """
-    def runOnce(self):
-        logMe(self.devices)
+        """
+        # logMe(self.devices)
         for key in self.devices:
-            logMe(key, self.devices[key])
+            # logMe(key, self.devices[key])
             self.devices[key].getTemps()
             self.devices[key].setTemps()
 
-    """
+    def runLoop(self):
+        """
         The glorious main loop of the program.
         potential TODO: dont write the same thing twice?
-    """
-    def runLoop(self):
-        logMe(self.devices)
+        """
+        # logMe(self.devices)
         while self.runnable:
             for key in self.devices:
                 self.devices[key].getTemps()
                 self.devices[key].setTemps()
             time.sleep(self.interval)
-    """
-        Remove the PID file when we exit.
-    """
+
     def __del__(self):
+        """
+        Remove the PID file when we exit.
+        """
         self.removePid()
+
 
 """
     Run the soggy thing!

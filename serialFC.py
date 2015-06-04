@@ -1,21 +1,17 @@
 import serial
 from serial.tools import list_ports
+import logging
 
-debug = True
-
-def logMe(*value):
-    if debug:
-        print(value)
-
-"""
-    Class for communicating with my Atmega 8-16 based PWM fan controller,
-    Serial, 9600 baud.
-"""
 class SerialFC(object):
     """
-        Basic initialisation and availibility check.
+    Class for communicating with my Atmega 8-16 based PWM fan controller,
+    Serial, 9600 baud.
     """
+
     def __init__(self):
+        """
+        Basic initialisation and availibility check.
+        """
         self.ser = serial.Serial()
         self.ser.baudrate = 9600
         """
@@ -34,13 +30,13 @@ class SerialFC(object):
             self.serialAvailible = True
             self.ser.close()
         except:
-            logMe('Failed opening serial port')
             self.serialAvailible = False
-    """
+
+    def write(self, data):
+        """
         Open serial interface, write data, close serial interface.
         Pray to satan nothing blows up.
-    """
-    def write(self, data):
+        """
         self.ser.open()
         self.ser.write(data)
         self.ser.close()

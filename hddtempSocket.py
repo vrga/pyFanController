@@ -1,17 +1,12 @@
 import socket
+import logging
 
-debug = False
-
-def logMe(*value):
-    if debug:
-        print(value)
-
-"""
-    Class to access hddtemp data, through the daemon hddtemp uses.
-    Requires that you actually run the hddtemp daemon 
-    on the localhost with the default port.
-"""
 class hddtemp(object):
+    """
+    Class to access hddtemp data, through the daemon hddtemp uses.
+    Requires that you actually run the hddtemp daemon
+    on the localhost with the default port.
+    """
     def __init__(self):
         self.port = 7634
         self.host = '127.0.0.1'
@@ -26,15 +21,16 @@ class hddtemp(object):
             self.availible = True
             self.s.close()
         except:
-            logMe('Failed opening socket to local hddtemp')
-            #self.s.close()
+            # logMe('Failed opening socket to local hddtemp')
+            pass
+            # self.s.close()
 
-    """
+    def getTemps(self):
+        """
         Get and parse HDD temperatures.
         Works for whatever number of HDD's you might have.
         If the daemon itself returns proper data that is.
-    """
-    def getTemps(self):
+        """
         if self.availible:
             try:
                 self.s = socket.socket()
@@ -43,11 +39,11 @@ class hddtemp(object):
                 self.s.close()
                 temps = list()
                 temperature = str(data, 'utf-8').split('||')
-                logMe(temperature)
+                # logMe(temperature)
                 for i in temperature:
                     if i[0] == '|':
                         i = i[1:]
-                    logMe(i)
+                    # logMe(i)
                     """
                         If reading fails, set temperature to 0.
                         This is handled in the device.py 
@@ -61,9 +57,11 @@ class hddtemp(object):
                         temps.append(float(0))
                 return temps
             except:
-                logMe('Connection to hddtemp failed.')
+                # logMe('Connection to hddtemp failed.')
+                pass
         else:
-            logMe('hddtemp daemon not availible. Is it running?')
+            # logMe('hddtemp daemon not availible. Is it running?')
+            pass
 
 """
     This is used for debugging the soggy thing, 
