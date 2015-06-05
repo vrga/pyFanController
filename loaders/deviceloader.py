@@ -21,11 +21,16 @@ class DeviceLoader(object):
 
     def create_devices(self):
         """
-        creates
+        creates all device from configured ones
         :return:
         :rtype: dict[str, TemperatureController]
         """
-        return {device: self.create_device(device) for device in self.config.get('base').get('devices').split('. ')}
+        devices = self.config.get('base').get('devices').split('. ')
+
+        if not devices:
+            raise ValueError('No devices enabled, please enable at least one.')
+
+        return {device: self.create_device(device) for device in devices}
 
     def create_device(self, device_name):
         """
