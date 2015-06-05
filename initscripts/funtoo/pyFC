@@ -1,7 +1,8 @@
 #!/sbin/runscript 
 
-exec='/home/vrga/projects/pyFC/pyFC.py'
-pidfile="/var/run/pyFC.pid"
+exec='python /usr/share/pyFanController/'
+pidfile='/var/run/pyFC.pid'
+config_file='/etc/pyFC.ini'
 
 depend() { 
   need localmount
@@ -10,7 +11,7 @@ depend() {
 
 start() { 
  ebegin "Starting fan controller" 
- start-stop-daemon --start --name pyFC --exec "$exec" --pidfile "$pidfile" -w 10 --background
+ start-stop-daemon --start --name pyFC --env PYFC_CONFIG_PATH="$config_file"--pidfile "$pidfile" -w 10 --background --exec $exec
  eend $? 
 } 
 
