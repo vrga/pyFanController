@@ -29,7 +29,7 @@ class HDDTemp(InputDevice):
         """
         temps = list()
 
-        if self.available is True:
+        if self.available:
             data = self.try_read()
 
             try:
