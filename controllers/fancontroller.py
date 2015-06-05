@@ -1,12 +1,7 @@
-#!/usr/bin/python3.3
-
 import os
 import time
 import sys
 import logging
-
-extras = dict()
-
 
 class FanController(object):
     """
@@ -16,32 +11,32 @@ class FanController(object):
     def __init__(self, config, devices):
         """
         does basic config needed.
-        :param config:
+        :param config: dict of config values
+        :param devices:
+        :type devices: dict[str, TemperatureController
         """
-        self.config = config
-        os.chdir(self.config.work_dir)
-        self.pidFile = self.config.pid_file
-        self.interval = self.config.interval
+        self.pid_file = config['pid_file']
+        self.interval = config['interval']
         self.devices = devices
         self.pid = self.create_pid()
         self.runnable = False
 
     def create_pid(self):
         """
-        Set up the PID and dont run if we dont manage to write the soggy thing!
+        Set up the PID and don't run if we don't manage to write the soggy thing!
         """
         pid = os.getpid()
         try:
-            if os.path.exists(self.pidFile):
+            if os.path.exists(self.pid_file):
                 raise RuntimeError('PID file exists, bugging out! Check if pyFC is running?')
             try:
-                with open(self.pidFile, 'w') as PID:
+                with open(self.pid_file, 'w') as PID:
                     PID.write(str(pid).join('\n'))
                     logging.info('PID: %s', pid)
             except (PermissionError, IOError):
                 msg = 'Failed writing PID file %s, for PID: %d'
-                logging.error(msg, self.pidFile, pid)
-                sys.exit(msg.format(self.pidFile, pid))
+                logging.error(msg, self.pid_file, pid)
+                sys.exit(msg.format(self.pid_file, pid))
         except RuntimeError:
             logging.exception('%s', RuntimeError)
             sys.exit(RuntimeError)
@@ -54,11 +49,11 @@ class FanController(object):
         TODO: probably a better exception catch here, but eh.
         """
         try:
-            os.remove(self.pidFile)
+            os.remove(self.pid_file)
         except (PermissionError, OSError):
             msg = 'Failed deleting pid file, please purge %s manually.'
-            logging.exception(msg, self.pidFile)
-            sys.exit(msg.format(self.pidFile))
+            logging.exception(msg, self.pid_file)
+            sys.exit(msg.format(self.pid_file))
 
     def run(self):
         """
@@ -67,9 +62,8 @@ class FanController(object):
         """
         logging.debug(self.devices)
         while self.runnable:
-            for key in self.devices:
-                self.devices[key].getTemps()
-                self.devices[key].setTemps()
+            for device in self.devices:
+                device.run()
             time.sleep(self.interval)
 
     def __del__(self):
@@ -77,3 +71,5 @@ class FanController(object):
         Remove the PID file when we exit.
         """
         self.remove_pid()
+        for device in self.devices:
+            device.disable()

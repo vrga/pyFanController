@@ -97,6 +97,7 @@ class DeviceLoader(object):
         speeds = []
         """
         speed value determination...
+        TODO: Try to simplify this? I've lost more time on this tidbit than any other...
         """
         previous_range = 1
         previous_max_speed = first[1]
