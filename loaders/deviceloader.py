@@ -2,11 +2,11 @@ import logging
 
 from numpy import interp
 
-from controllers.temperaturecontroller import TemperatureController
-from devicecontainers.lmsensorsinputfile import LMSensorsInputFile
-from devicecontainers.hddtemp import HDDTemp
-from devicecontainers.lmsensorsoutputfile import LMSensorsOutputFile
-from devicecontainers.serialoutput import SerialOutput
+from ..controllers.temperaturecontroller import TemperatureController
+from ..devicecontainers.lmsensorsinputfile import LMSensorsInputFile
+from ..devicecontainers.hddtemp import HDDTemp
+from ..devicecontainers.lmsensorsoutputfile import LMSensorsOutputFile
+from ..devicecontainers.serialoutput import SerialOutput
 
 
 class DeviceLoader(object):

@@ -3,9 +3,9 @@
 import os
 import logging
 
-from controllers.fancontroller import FanController
-from loaders.configloader import ConfigLoader
-from loaders.deviceloader import DeviceLoader
+from .controllers.fancontroller import FanController
+from .loaders.configloader import ConfigLoader
+from .loaders.deviceloader import DeviceLoader
 
 
 def main():
@@ -25,9 +25,9 @@ def main():
     logging.basicConfig(filename=log_config['path'], level=log_config['level'])
 
     devices = DeviceLoader(config).create_devices()
-    fc = FanController(config.get('base'), devices)
-    fc.runnable = True
-    fc.run()
+    fan_control = FanController(config.get('base'), devices)
+    fan_control.runnable = True
+    fan_control.run()
 
 
 if __name__ == '__main__':

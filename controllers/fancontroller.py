@@ -1,3 +1,6 @@
+"""
+Module containing the FanController class
+"""
 import os
 import time
 import sys
@@ -31,8 +34,8 @@ class FanController(object):
             if os.path.exists(self.pid_file):
                 raise RuntimeError('PID file exists, bugging out! Check if pyFC is running?')
             try:
-                with open(self.pid_file, 'w') as PID:
-                    PID.write(str(pid).join('\n'))
+                with open(self.pid_file, 'w') as writer:
+                    writer.write(str(pid).join('\n'))
                     logging.info('PID: %s', pid)
             except (PermissionError, IOError):
                 msg = 'Failed writing PID file %s, for PID: %d'
