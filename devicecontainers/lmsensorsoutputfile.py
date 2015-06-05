@@ -1,7 +1,8 @@
 import logging
 
-from .outputdevice import OutputDevice
+from numpy import interp
 
+from .outputdevice import OutputDevice
 
 class LMSensorsOutputFile(OutputDevice):
     """
@@ -34,6 +35,7 @@ class LMSensorsOutputFile(OutputDevice):
         writes '1' to the enabler file.
         """
         self.get_old_value()
+        logging.debug('writing to enabler: %s', self.enable_file)
         try:
             with open(self.enable_file, 'w') as writer:
                 writer.write('1')
@@ -48,9 +50,9 @@ class LMSensorsOutputFile(OutputDevice):
         :type speed: int
         """
         if self.enabled:
-            logging.debug('Speed for file: %s set to %s', self.output_file, speed)
+            logging.debug('Speed for file: %s set to %s', self.output_file, int(interp(speed, [0, 255], [0, 100])))
             try:
-                with open(self.output_file, 'w') as writer:
+                with open(self.output_file, 'a') as writer:
                     writer.write(str(speed))
             except (IOError, PermissionError):
                 logging.exception('Error writing to speed file: %s', self.output_file)

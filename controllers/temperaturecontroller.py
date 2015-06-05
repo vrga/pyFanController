@@ -1,8 +1,9 @@
 import logging
 
-from ..devicecontainers.inputdevice import InputDevice
-from ..devicecontainers.outputdevice import OutputDevice
+from numpy import interp
 
+from devicecontainers.inputdevice import InputDevice
+from devicecontainers.outputdevice import OutputDevice
 
 class TemperatureController(object):
     """
@@ -33,7 +34,7 @@ class TemperatureController(object):
         if temp != 0:
             self.temp = temp
         self.speed = self.speeds[self.temp]
-        logging.debug('temperature %s°C, speed: %s%%', self.temp, self.speed)
+        logging.debug('temperature %s°C, speed: %s%%', self.temp, int(interp(self.speed, [0, 255], [0, 100])))
         self.output.set_speed(self.speed)
 
     def enable(self):

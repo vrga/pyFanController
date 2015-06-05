@@ -3,9 +3,9 @@
 import os
 import logging
 
-from .controllers.fancontroller import FanController
-from .loaders.configloader import ConfigLoader
-from .loaders.deviceloader import DeviceLoader
+from controllers.fancontroller import FanController
+from loaders.configloader import ConfigLoader
+from loaders.deviceloader import DeviceLoader
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
     assemble it all and run.
     """
     work_dir = os.environ.get('PYFC_WORK_DIR', os.path.dirname(os.path.abspath(__file__)))
-    config_path = os.environ.get('PYFC_CONFIG_PATH', work_dir.join('/settings.ini'))
+    config_path = os.environ.get('PYFC_CONFIG_PATH', ''.join([work_dir, '/settings.ini']))
     config = ConfigLoader(config_path)
 
     log_config = config.get('log')

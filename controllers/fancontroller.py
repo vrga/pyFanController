@@ -19,8 +19,8 @@ class FanController(object):
         :param devices:
         :type devices: dict[str, TemperatureController
         """
-        self.pid_file = config['pid_file']
-        self.interval = config['interval']
+        self.pid_file = config.get('pid_file')
+        self.interval = int(config.get('interval', 5))
         self.devices = devices
         self.pid = self.create_pid()
         self.runnable = False
@@ -29,13 +29,13 @@ class FanController(object):
         """
         Set up the PID and don't run if we don't manage to write the soggy thing!
         """
-        pid = os.getpid()
+        pid = str(os.getpid())
         try:
             if os.path.exists(self.pid_file):
                 raise RuntimeError('PID file exists, bugging out! Check if pyFC is running?')
             try:
                 with open(self.pid_file, 'w') as writer:
-                    writer.write(str(pid).join('\n'))
+                    writer.write(''.join([pid, '\n']))
                     logging.info('PID: %s', pid)
             except (PermissionError, IOError):
                 msg = 'Failed writing PID file %s, for PID: %d'
@@ -62,11 +62,14 @@ class FanController(object):
     def run(self):
         """
         The glorious main loop of the program.
-        potential TODO: dont write the same thing twice?
         """
         logging.debug(self.devices)
+
+        for name, device in self.devices.items():
+            device.enable()
+
         while self.runnable:
-            for device in self.devices:
+            for name, device in self.devices.items():
                 device.run()
             time.sleep(self.interval)
 
@@ -75,5 +78,5 @@ class FanController(object):
         Remove the PID file when we exit.
         """
         self.remove_pid()
-        for device in self.devices:
+        for name, device in self.devices.items():
             device.disable()

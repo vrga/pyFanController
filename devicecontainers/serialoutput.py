@@ -39,7 +39,7 @@ class SerialOutput(OutputDevice):
                 self.serial.open()
                 self.serial.write(
                     bytes(
-                        str(self.device_number).join('/').join(str(speed)).join('/'),
+                        ''.join([str(self.device_number), '/', str(speed), '/']),
                         'utf-8'
                     )
                 )

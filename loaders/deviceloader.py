@@ -2,11 +2,11 @@ import logging
 
 from numpy import interp
 
-from ..controllers.temperaturecontroller import TemperatureController
-from ..devicecontainers.lmsensorsinputfile import LMSensorsInputFile
-from ..devicecontainers.hddtemp import HDDTemp
-from ..devicecontainers.lmsensorsoutputfile import LMSensorsOutputFile
-from ..devicecontainers.serialoutput import SerialOutput
+from controllers.temperaturecontroller import TemperatureController
+from devicecontainers.lmsensorsinputfile import LMSensorsInputFile
+from devicecontainers.hddtemp import HDDTemp
+from devicecontainers.lmsensorsoutputfile import LMSensorsOutputFile
+from devicecontainers.serialoutput import SerialOutput
 
 
 class DeviceLoader(object):
@@ -25,7 +25,7 @@ class DeviceLoader(object):
         :return:
         :rtype: dict[str, TemperatureController]
         """
-        devices = self.config.get('base').get('devices').split('. ')
+        devices = self.config.get('base').get('devices').split(', ')
 
         if not devices:
             raise ValueError('No devices enabled, please enable at least one.')
@@ -44,16 +44,22 @@ class DeviceLoader(object):
         data = self.config.get(device_name)
 
         if data.get('inputType') == 'componentTemp':
-            prefix = data.get('tempMonDevicePathPrefix')
-            input_device = LMSensorsInputFile(tuple(prefix.join(path) for path in data.get('temperatureMonitor')))
+            input_device = LMSensorsInputFile(
+                [''.join(
+                    [
+                        data.get('tempMonDevicePathPrefix'), path])
+                 for path in data.get('temperatureMonitor').split(', ')
+                 ])
         elif self.hddtemp and data.get('inputType') == 'hddtemp':
             input_device = HDDTemp()
         else:
             raise ValueError('No Input device created, check the configuration!')
 
         if data.get('outputType') == 'fanPWM':
-            prefix = data.get('mainDevicePathPrefix')
-            output_device = LMSensorsOutputFile(prefix.join(data.get('device')), prefix.join(data.get('outputEnabler')))
+            output_device = LMSensorsOutputFile(
+                ''.join([data.get('mainDevicePathPrefix'), data.get('device')]),
+                ''.join([data.get('mainDevicePathPrefix'), data.get('outputEnabler')])
+            )
         elif self.serial and data.get('outputType') == 'serial':
             output_device = SerialOutput(int(data.get('device')))
         else:
