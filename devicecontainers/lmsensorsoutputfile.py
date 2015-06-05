@@ -6,7 +6,8 @@ from .outputdevice import OutputDevice
 class LMSensorsOutputFile(OutputDevice):
     """
     Class to manipulate lm sensors PWM inputs or any other if you so desire.
-    Check http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/plain/Documentation/hwmon/sysfs-interface?id=HEAD
+    Check
+    http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/plain/Documentation/hwmon/sysfs-interface?id=HEAD
     for details.
     """
 

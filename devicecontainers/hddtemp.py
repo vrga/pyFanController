@@ -108,6 +108,5 @@ class HDDTemp(InputDevice):
         """
         try:
             self.socket.close()
-        except:
-            """ intentional! """
+        except socket.error:
             pass

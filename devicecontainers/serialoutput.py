@@ -24,8 +24,7 @@ class SerialOutput(OutputDevice):
             TODO: stuff this into the config file. Its a stupid way.
             """
             self.serial.port = next(list_ports.grep('ttyUSB[0-9]'))[0]
-        except:
-            """ TODO: Figure out a better exception... """
+        except serial.SerialException:
             self.serial_available = False
 
     def set_speed(self, speed):

@@ -3,6 +3,7 @@ import time
 import sys
 import logging
 
+
 class FanController(object):
     """
     Basic Fan Control class. The setup magic happens here.
