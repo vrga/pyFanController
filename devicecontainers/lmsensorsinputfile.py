@@ -1,4 +1,7 @@
 import logging
+from math import ceil
+
+from numpy import mean
 
 from .inputdevice import InputDevice
 
@@ -11,19 +14,24 @@ class LMSensorsInputFile(InputDevice):
     for details.
     """
 
-    def __init__(self, file_path):
+    def __init__(self, file_paths):
         """
-        :param file_path: path to lm-sensors file
-        :type file_path: str
+        :param file_paths: path to lm-sensors file
+        :type file_paths: tuple or list
         """
-        self.path = file_path
+        self.paths = file_paths
 
     def get_temp(self):
-        try:
-            with open(self.path, 'r') as Reader:
-                temp = int(Reader.read()[:-4])
-        except IOError:
-            temp = 0
-            logging.error('Could not read file: %s', self.path)
+        temp = []
+        for path in self.paths:
+            try:
+                with open(path, 'r') as Reader:
+                    temp.append(int(Reader.read()[:-4]))
+            except IOError:
+                temp.append(0)
+                logging.error('Could not read file: %s', path)
 
-        return temp
+        if not temp:
+            temp = [0]
+
+        return ceil(mean(temp))
