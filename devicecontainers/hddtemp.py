@@ -40,10 +40,9 @@ class HDDTemp(InputDevice):
                 self.available = False  # Disable reading from this source in the future.
 
             for temp in temperature:
-                if temp[0] == '|':
-                    temp = temp[1:]
-
                 try:
+                    if temp[0] == '|':
+                        temp = temp[1:]
                     temps.append(float(temp.split('|')[2]))
                 except:
                     """
