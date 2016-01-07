@@ -1,6 +1,7 @@
 import logging
 
 from numpy import interp
+import numpy
 
 from controllers.temperaturecontroller import TemperatureController
 from devicecontainers.lmsensorsinputfile import LMSensorsInputFile
@@ -111,6 +112,9 @@ class DeviceLoader(object):
             current_range = ranges[0]
             current_max_speed = ranges[1]
 
+            if current_max_speed < first[1]:
+                continue
+
             values = interp(
                 range(previous_range, current_range),  # current temperature steps
                 [previous_range, current_range],  # previous max temp range, current max temp range
@@ -122,6 +126,7 @@ class DeviceLoader(object):
             previous_range = current_range
             previous_max_speed = current_max_speed
 
-        speeds.extend(last[1] for t in range(last[0], 101))
+        speeds.extend(numpy.float64(last[1]) for t in range(last[0], 101))
 
-        return tuple(int(val) for val in interp(speeds, [0, 100], [0, 255]))
+        retval = tuple(int(val) for val in interp(speeds, [0, 100], [0, 255]))
+        return retval
