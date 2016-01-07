@@ -50,14 +50,14 @@ class LMSensorsOutputFile(OutputDevice):
         :type speed: int
         """
         if self.enabled:
-            logging.debug('Speed for file: %s set to %s', self.output_file, int(interp(speed, [0, 255], [0, 100])))
+            logging.debug('Speed for device: %s set to %s', self.output_file, int(interp(speed, [0, 255], [0, 100])))
             try:
                 with open(self.output_file, 'a') as writer:
                     writer.write(str(speed))
             except (IOError, PermissionError):
-                logging.exception('Error writing to speed file: %s', self.output_file)
+                logging.exception('Error writing speed to device: %s', self.output_file)
         else:
-            logging.debug('Speed for file: %s set to %s', self.output_file, speed)
+            logging.debug('Speed for device: %s set to %s', self.output_file, speed)
 
     def disable(self):
         """

@@ -20,12 +20,14 @@ class HDDTemp(InputDevice):
         self.socket = socket.socket()
         self.available = False
         self.open_socket()
+        self.temps = list()
 
     def get_temp(self):
         """
         Get and parse HDD temperatures.
         Works for whatever number of HDD's you might have.
         If the daemon itself returns proper data that is.
+        If data cannot be read, assume the temperature is around 35°C.
         """
         temps = list()
 
@@ -36,7 +38,7 @@ class HDDTemp(InputDevice):
                 temperature = data.decode('utf-8').split('||')
             except UnicodeDecodeError:
                 temperature = []
-                logging.error('hddtemp returned utterly invalid data.')
+                logging.exception('hddtemp returned utterly invalid data.')
                 self.available = False  # Disable reading from this source in the future.
 
             for temp in temperature:
@@ -44,19 +46,21 @@ class HDDTemp(InputDevice):
                     if temp[0] == '|':
                         temp = temp[1:]
                     temps.append(float(temp.split('|')[2]))
+                except (IndexError, ValueError):
+                    temps.append(float(35))
                 except:
                     """
-                    TODO: figure out what exception can the above actually throw...
+                    TODO: figure out what exception can the above actually throw... partially did...
                     """
-                    logging.info('something broke.')
-                    temps.append(float(0))
+                    logging.exception('something broke.')
+                    temps.append(float(35))
         else:
             logging.warning('hddtemp daemon not availible. Is it running?')
 
         if not temps:
-            return 0
-        else:
-            return ceil(mean(temps))
+            temps.append(float(35))
+
+        return ceil(mean(temps))
 
     def open_socket(self):
         """
@@ -74,7 +78,7 @@ class HDDTemp(InputDevice):
         """
         reads 4096 bytes worth of socket info.
         :return:
-        :type return: str
+        :type :return: str
         """
         self.socket = socket.socket()
         self.socket.connect((self.host, self.port))
@@ -84,7 +88,7 @@ class HDDTemp(InputDevice):
         """
          tries reading twice, if failing second time marks the whole thing as unavailable.
         :return:
-        :type return: bytes
+        :type :return: bytes
         """
         try:
             data = self.read_socket()

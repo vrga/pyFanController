@@ -46,10 +46,10 @@ class SerialOutput(OutputDevice):
 
                 self.serial.close()
                 logging.debug(
-                    'Speed: %s%% written to device %s on port: %s',
-                    str(speed),
+                        'Speed for device: %s/%s set to %s',
+                        self.serial.port,
                     self.device_number,
-                    self.serial.port
+                        str(speed)
                 )
             except serial.SerialException:
                 self.serial_available = False
