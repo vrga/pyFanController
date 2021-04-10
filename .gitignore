@@ -6,3 +6,4 @@ __pycache__/
 *.kdev4
 .kdev4/
 .idea/
+/venv
