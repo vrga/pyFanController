@@ -2,9 +2,11 @@ import socket
 import logging
 from math import ceil
 
-from numpy import mean
+from common import mean
 
 from .inputdevice import InputDevice
+
+log = logging.getLogger(__name__)
 
 
 class HDDTemp(InputDevice):
@@ -19,7 +21,6 @@ class HDDTemp(InputDevice):
         self.port = port
         self.socket = socket.socket()
         self.available = False
-        self.open_socket()
         self.temps = list()
 
     def get_temp(self):
@@ -29,7 +30,9 @@ class HDDTemp(InputDevice):
         If the daemon itself returns proper data that is.
         If data cannot be read, assume the temperature is around 35°C.
         """
-        temps = list()
+        self.open_socket()
+
+        temps = list()  # type: list[float]
 
         if self.available:
             data = self.try_read()
@@ -38,7 +41,7 @@ class HDDTemp(InputDevice):
                 temperature = data.decode('utf-8').split('||')
             except UnicodeDecodeError:
                 temperature = []
-                logging.exception('hddtemp returned utterly invalid data.')
+                log.exception('hddtemp returned utterly invalid data.')
                 self.available = False  # Disable reading from this source in the future.
 
             for temp in temperature:
@@ -52,13 +55,13 @@ class HDDTemp(InputDevice):
                     """
                     TODO: figure out what exception can the above actually throw... partially did...
                     """
-                    logging.exception('something broke.')
-                    temps.append(float(35))
+                    log.exception('something broke.')
+                    temps.append(35.0)
         else:
-            logging.warning('hddtemp daemon not availible. Is it running?')
+            log.warning('hddtemp daemon not availible. Is it running?')
 
         if not temps:
-            temps.append(float(35))
+            temps.append(35.0)
 
         return ceil(mean(temps))
 
@@ -67,12 +70,15 @@ class HDDTemp(InputDevice):
             Basic test to determine availibility of the daemon.
             If not availible, log it.
         """
+        if self.available:
+            return
+
         try:
             self.socket.connect((self.host, self.port))
             self.available = True
         except socket.error:
             self.available = False
-            logging.exception('Failed opening socket to local hddtemp')
+            log.exception('Failed opening socket to local hddtemp')
 
     def read_socket(self):
         """
@@ -93,7 +99,7 @@ class HDDTemp(InputDevice):
         try:
             data = self.read_socket()
         except socket.error:
-            logging.debug('Socket connection died, retrying')
+            log.debug('Socket connection died, retrying')
             try:
                 self.socket.close()
                 self.open_socket()
@@ -101,7 +107,7 @@ class HDDTemp(InputDevice):
             except socket.error:
                 data = ''
                 self.available = False
-                logging.exception('Socket definitely dead. Stopping access attempts')
+                log.exception('Socket definitely dead. Stopping access attempts')
 
         return data
 
@@ -112,4 +118,4 @@ class HDDTemp(InputDevice):
         try:
             self.socket.close()
         except socket.error:
-            pass
+            log.exception('Failed opening socket to local hddtemp')
