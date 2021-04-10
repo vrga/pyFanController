@@ -7,12 +7,12 @@ class OutputDevice(metaclass=ABCMeta):
     """
     @abstractmethod
     def set_speed(self, speed):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def enable(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def disable(self):
-        pass
+        raise NotImplementedError

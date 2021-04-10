@@ -7,4 +7,4 @@ class InputDevice(metaclass=ABCMeta):
     """
     @abstractmethod
     def get_temp(self):
-        pass
+        raise NotImplementedError
