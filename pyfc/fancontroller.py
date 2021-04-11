@@ -5,24 +5,17 @@ import os
 import time
 import sys
 import logging
+from pathlib import Path
+from typing import Dict
+
+from .temperaturecontroller import TemperatureController
 
 
-class FanController(object):
-    """
-    Basic Fan Control class. The setup magic happens here.
-    """
-
-    def __init__(self, config, devices):
-        """
-        does basic config needed.
-        :param config: dict of config values
-        :param devices:
-        :type devices: dict[str, TemperatureController
-        """
-        self.pid_file = config.get('pid_file')
-        self.interval = int(config.get('interval', 5))
+class FanController:
+    def __init__(self, pid_file: Path, interval: int, devices: Dict[str, TemperatureController]):
+        self.pid_file = pid_file
+        self.interval = interval
         self.devices = devices
-        self.pid = self.create_pid()
         self.runnable = False
 
     def create_pid(self):
@@ -31,14 +24,13 @@ class FanController(object):
         """
         pid = str(os.getpid())
         try:
-            if os.path.exists(self.pid_file):
+            if self.pid_file.exists():
                 raise RuntimeError('PID file exists, bugging out! Check if pyFC is running?')
             try:
-                with open(self.pid_file, 'w') as writer:
-                    writer.write(''.join([pid, '\n']))
-                    logging.info('PID: %s', pid)
+                self.pid_file.write_text(''.join([pid, '\n']))
+                logging.info('PID: %s', pid)
             except (PermissionError, IOError):
-                msg = 'Failed writing PID file %s, for PID: %d'
+                msg = 'Failed writing PID file {}, for PID: {}'
                 logging.error(msg, self.pid_file, pid)
                 sys.exit(msg.format(self.pid_file, pid))
         except RuntimeError:
@@ -53,13 +45,13 @@ class FanController(object):
         TODO: probably a better exception catch here, but eh.
         """
         try:
-            os.remove(self.pid_file)
+            self.pid_file.unlink(True)
         except (PermissionError, OSError):
             msg = 'Failed deleting pid file, please purge %s manually.'
             logging.exception(msg, self.pid_file)
             sys.exit(msg.format(self.pid_file))
 
-    def run(self):
+    def start(self):
         """
         The glorious main loop of the program.
         """
@@ -72,6 +64,15 @@ class FanController(object):
             for name, device in self.devices.items():
                 device.run()
             time.sleep(self.interval)
+
+    def run(self):
+        self.runnable = True
+
+        try:
+            self.create_pid()
+            self.start()
+        finally:
+            self.remove_pid()
 
     def __del__(self):
         """

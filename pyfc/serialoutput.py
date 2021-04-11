@@ -1,9 +1,11 @@
 import logging
-
-import serial
+from serial import Serial, SerialException
 from serial.tools import list_ports
 
-from .outputdevice import OutputDevice
+from .common import OutputDevice
+
+
+log = logging.getLogger(__name__)
 
 
 class SerialOutput(OutputDevice):
@@ -12,9 +14,9 @@ class SerialOutput(OutputDevice):
     Serial, 9600 baud.
     """
 
-    def __init__(self, device_number):
-        self.serial = serial.Serial()
-        self.serial.baudrate = 9600
+    def __init__(self, device_number: str, serial_baud: int = 9600):
+        self.serial = Serial()
+        self.serial.baudrate = serial_baud
         self.serial_available = False
         self.device_number = device_number
 
@@ -24,7 +26,7 @@ class SerialOutput(OutputDevice):
             TODO: stuff this into the config file. Its a stupid way.
             """
             self.serial.port = next(list_ports.grep('ttyUSB[0-9]'))[0]
-        except serial.SerialException:
+        except SerialException:
             self.serial_available = False
 
     def set_speed(self, speed):
@@ -37,24 +39,18 @@ class SerialOutput(OutputDevice):
         if self.serial_available:
             try:
                 self.serial.open()
-                self.serial.write(
-                    bytes(
-                        ''.join([str(self.device_number), '/', str(speed), '/']),
-                        'utf-8'
-                    )
-                )
-
+                self.serial.write(bytes(''.join([str(self.device_number), '/', str(speed), '/']), 'utf-8'))
                 self.serial.close()
-                logging.debug(
-                        'Speed for device: %s/%s set to %s',
+                log.debug(
+                        'Speed for device: {}/{} set to {}',
                         self.serial.port,
-                    self.device_number,
+                        self.device_number,
                         str(speed)
                 )
-            except serial.SerialException:
+            except SerialException:
                 self.serial_available = False
         else:
-            logging.debug('Written speed would be: %s', str(speed))
+            log.debug('Written speed would be: {}', speed)
 
     def enable(self):
         """
@@ -64,10 +60,10 @@ class SerialOutput(OutputDevice):
             self.serial.open()
             self.serial_available = True
             self.serial.close()
-            logging.debug('Enabled serial communication on port: %s', self.serial.port)
-        except serial.SerialException:
+            log.debug('Enabled serial communication on port: {}', self.serial.port)
+        except SerialException:
             self.serial_available = False
-            logging.exception('Failed enabling serial port: %s', self.serial.port)
+            log.exception('Failed enabling serial port: {}', self.serial.port)
 
     def disable(self):
         """
@@ -76,10 +72,10 @@ class SerialOutput(OutputDevice):
         try:
             self.serial.close()
             self.serial_available = False
-            logging.debug('Disabled serial port: %s', self.serial.port)
-        except serial.SerialException:
+            log.debug('Disabled serial port: {}', self.serial.port)
+        except SerialException:
             self.serial_available = False
-            logging.exception('Failed disabling serial port: %s', self.serial.port)
+            log.exception('Failed disabling serial port: {}', self.serial.port)
 
     def __del__(self):
         self.disable()

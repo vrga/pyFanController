@@ -1,10 +1,8 @@
-import socket
 import logging
+import socket
 from math import ceil
 
-from common import mean
-
-from .inputdevice import InputDevice
+from .common import InputDevice, mean
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +48,7 @@ class HDDTemp(InputDevice):
                         temp = temp[1:]
                     temps.append(float(temp.split('|')[2]))
                 except (IndexError, ValueError):
-                    temps.append(float(35))
+                    temps.append(35.0)
                 except:
                     """
                     TODO: figure out what exception can the above actually throw... partially did...

@@ -1,0 +1,13 @@
+[Unit]
+Description=some sorta fan controller....
+
+[Service]
+Environment=PYFC_CONFIG_PATH='/etc/pyFC/settings.ini'
+Environment='PYFC_WORK_DIR=/etc/pyFC/'
+PIDFile=/run/pyFC.pid
+ExecStart=/root/pyFanController/venv/bin/python3 /root/pyFanController/
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
