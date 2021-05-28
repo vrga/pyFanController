@@ -27,7 +27,7 @@ def main():
 
     device_identifiers = config['base']['devices'].split(', ')
     device_configuration = {identifier: config[identifier] for identifier in device_identifiers}
-    devices = {name: create_device(name, config) for name, config in device_configuration}
+    devices = {name: create_device(name, config) for name, config in device_configuration.items()}
     fan_control = FanController(
             Path(config['base']['pid_file']).absolute(),
             config['base'].getint('interval', 5),
