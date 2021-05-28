@@ -14,8 +14,8 @@ log = logging.getLogger(__name__)
 def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
     input_devices = []
     if device_config.get('inputType') == 'componentTemp':
-        specific_devices = [k.trim() for k in device_config.get('temperatureMonitorDeviceName').split(',')]
-        for idx, path in enumerate([k.trim() for k in device_config.get('temperatureMonitor').split(',')]):
+        specific_devices = [k.strip() for k in device_config.get('temperatureMonitorDeviceName').split(',')]
+        for idx, path in enumerate([k.strip() for k in device_config.get('temperatureMonitor').split(',')]):
             input_devices.extend(LMSensorsInput.from_path(specific_devices[idx], path))
     elif device_config.get('inputType') == 'hddtemp':
         input_devices.append(HDDTemp())
