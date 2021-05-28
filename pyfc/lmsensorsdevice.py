@@ -21,7 +21,10 @@ class LMSensorsDevice:
         matching_paths = []
         for device_dir in device_path.iterdir():
             potential_device_path = device_dir.joinpath('name')
-            if potential_device_path.name == device_name:
+            matches = potential_device_path.name == device_name
+            log.debug('in dir %s, potential device path: %s, matches: %s', device_dir, potential_device_path, matches)
+
+            if matches:
                 matching_paths.append(device_dir)
 
         if matching_paths:
