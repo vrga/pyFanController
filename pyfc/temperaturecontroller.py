@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Union
 
 from .common import InputDevice, OutputDevice, lerp, mean
 
@@ -23,6 +23,16 @@ class TemperatureController:
         self.temp = 0
         self.speed = 0
 
+    def _set_speed(self, temp: Union[float, int]):
+        temp = int(temp)
+        try:
+            self.speed = self.speeds[temp]
+        except IndexError:
+            if temp >= len(self.speeds):
+                self.speed = self.speeds[-1]
+            else:
+                self.speed = self.speeds[0]
+
     def run(self):
         """
             method which runs the thing.
@@ -31,7 +41,7 @@ class TemperatureController:
         temp = mean([input_dev.get_temp() for input_dev in self.inputs])
         if temp != 0:
             self.temp = temp
-        self.speed = self.speeds[self.temp]
+        self._set_speed(self.temp)
         log.debug('temperature %s°C, speed: %s%%', self.temp, int(lerp(self.speed, 0, 255, 0, 100)))
         for output_dev in self.outputs:
             output_dev.set_speed(self.speed)

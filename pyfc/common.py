@@ -47,8 +47,10 @@ class DummyOutput(OutputDevice):
         self.enabled = False
 
     def set_speed(self, speed) -> bool:
-        self.speed = speed
-        return True
+        if self.enabled:
+            self.speed = speed
+            return True
+        return False
 
     def enable(self):
         self.enabled = True
