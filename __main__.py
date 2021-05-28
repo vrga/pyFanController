@@ -33,7 +33,7 @@ def main():
             config['base'].getint('interval', 5),
             devices
     )
-    fan_control.start()
+    fan_control.run()
 
 
 if __name__ == '__main__':
