@@ -72,12 +72,7 @@ class FanController:
             self.create_pid()
             self.start()
         finally:
+            for name, device in self.devices.items():
+                device.disable()
             self.remove_pid()
 
-    def __del__(self):
-        """
-        Remove the PID file when we exit.
-        """
-        self.remove_pid()
-        for name, device in self.devices.items():
-            device.disable()
