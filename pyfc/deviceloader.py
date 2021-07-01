@@ -28,7 +28,13 @@ def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
 def determine_outputs(device_config: SectionProxy) -> List[OutputDevice]:
     output_devices = []
     if device_config.get('outputType') == 'fanPWM':
-        output_devices.extend(LMSensorsOutput.from_path(device_config.get('outputDeviceName'), device_config.get('device'), device_config.get('outputEnabler')))
+        output_device = device_config.get('outputDeviceName')
+        specific_device_outputs = [k.strip() for k in device_config.get('device').split(',')]
+        specific_device_output_enablers = [k.strip() for k in device_config.get('outputEnabler').split(',')]
+
+        for idx, path in enumerate(specific_device_outputs):
+            output_devices.extend(LMSensorsOutput.from_path(output_device, path, specific_device_output_enablers[idx]))
+
     elif device_config.get('outputType') == 'serial':
         output_devices.append(SerialOutput(device_config.getint('device')))
     else:
