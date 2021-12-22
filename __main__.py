@@ -2,6 +2,7 @@
 import configparser
 import os
 import logging
+import sys
 
 from pyfc.fancontroller import FanController
 from pyfc.deviceloader import create_device
@@ -23,7 +24,10 @@ def main():
     config = configparser.ConfigParser()
     config.read(config_path)
 
-    logging.basicConfig(filename=config['log']['path'], level=config['log']['level'])
+    if config['log']['path'] == 'stdout':
+        logging.basicConfig(stream=sys.stdout, level=config['log']['level'])
+    else:
+        logging.basicConfig(filename=config['log']['path'], level=config['log']['level'])
 
     device_identifiers = config['base']['devices'].split(', ')
     device_configuration = {identifier: config[identifier] for identifier in device_identifiers}

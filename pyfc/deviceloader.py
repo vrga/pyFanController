@@ -18,7 +18,7 @@ def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
         for idx, path in enumerate([k.strip() for k in device_config.get('temperatureMonitor').split(',')]):
             input_devices.extend(LMSensorsInput.from_path(specific_devices[idx], path))
     elif device_config.get('inputType') == 'hddtemp':
-        input_devices.append(HDDTemp())
+        input_devices.append(HDDTemp(device_config.get('hddtempHost', 'localhost'), int(device_config.get('hddtempPort', '7634'))))
     else:
         raise ValueError('No Input device created, check the configuration!')
 
