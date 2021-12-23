@@ -1,5 +1,7 @@
+import itertools
 import logging
 import socket
+from collections import deque
 from math import ceil
 
 from .common import InputDevice, mean
@@ -17,9 +19,14 @@ class HDDTemp(InputDevice):
     def __init__(self, host='127.0.0.1', port=7634):
         self.host = host
         self.port = port
-        self.socket = socket.socket()
         self.available = False
-        self.temps = list()
+        self.temps = {}
+
+    def get_mean_temp(self) -> float:
+        if not self.temps:
+            return 35.0
+
+        return mean(list(itertools.chain.from_iterable(self.temps.values())))
 
     def get_temp(self):
         """
@@ -28,55 +35,35 @@ class HDDTemp(InputDevice):
         If the daemon itself returns proper data that is.
         If data cannot be read, assume the temperature is around 35°C.
         """
-        self.open_socket()
 
-        temps = list()  # type: list[float]
+        data = self.try_read()
 
-        if self.available:
-            data = self.try_read()
+        hddtemp_string = data.decode('utf-8')
 
+        for temp in hddtemp_string.split('||'):
             try:
-                temperature = data.decode('utf-8').split('||')
-            except UnicodeDecodeError:
-                temperature = []
-                log.exception('hddtemp returned utterly invalid data.')
-                self.available = False  # Disable reading from this source in the future.
+                if temp[0] == '|':
+                    temp = temp[1:]
 
-            for temp in temperature:
-                try:
-                    if temp[0] == '|':
-                        temp = temp[1:]
-                    temps.append(float(temp.split('|')[2]))
-                except (IndexError, ValueError):
-                    temps.append(35.0)
-                except:
-                    """
-                    TODO: figure out what exception can the above actually throw... partially did...
-                    """
-                    log.exception('something broke.')
-                    temps.append(35.0)
-        else:
-            log.warning('hddtemp daemon not availible. Is it running?')
+                splitted = temp.split('|')
+                device = splitted[0]
+                device_name = splitted[1]
+                temperature = float(temp.split('|')[2])
 
-        if not temps:
-            temps.append(35.0)
+                if (device, device_name) not in self.temps:
+                    self.temps[(device, device_name)] = deque(maxlen=32)
 
-        return ceil(mean(temps))
+                self.temps[(device, device_name)].append(temperature)
+            except (IndexError, ValueError):
+                continue
+            except:
+                """
+                TODO: figure out what exception can the above actually throw... partially did...
+                """
+                log.exception('something broke.')
+                continue
 
-    def open_socket(self):
-        """
-            Basic test to determine availibility of the daemon.
-            If not availible, log it.
-        """
-        if self.available:
-            return
-
-        try:
-            self.socket.connect((self.host, self.port))
-            self.available = True
-        except socket.error:
-            self.available = False
-            log.exception('Failed opening socket to local hddtemp')
+        return ceil(self.get_mean_temp())
 
     def read_socket(self):
         """
@@ -84,9 +71,11 @@ class HDDTemp(InputDevice):
         :return:
         :type :return: str
         """
-        self.socket = socket.socket()
-        self.socket.connect((self.host, self.port))
-        return self.socket.recv(4096)
+        a_socket = socket.socket()
+        a_socket.connect((self.host, self.port))
+        data = a_socket.recv(4096)
+        a_socket.close()
+        return data
 
     def try_read(self):
         """
@@ -99,8 +88,6 @@ class HDDTemp(InputDevice):
         except socket.error:
             log.debug('Socket connection died, retrying')
             try:
-                self.socket.close()
-                self.open_socket()
                 data = self.read_socket()
             except socket.error:
                 data = ''
@@ -108,12 +95,3 @@ class HDDTemp(InputDevice):
                 log.exception('Socket definitely dead. Stopping access attempts')
 
         return data
-
-    def __del__(self):
-        """
-            make sure the socket is closed!
-        """
-        try:
-            self.socket.close()
-        except socket.error:
-            log.exception('Failed opening socket to local hddtemp')
