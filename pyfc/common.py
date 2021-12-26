@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import List, Union, Iterable
+from typing import List, Union, Iterable, Sequence
 
 
 class InputDevice(metaclass=ABCMeta):
@@ -59,7 +59,11 @@ class DummyOutput(OutputDevice):
         self.enabled = False
 
 
-def mean(seq: List):
+def mean(seq: Iterable) -> float:
+    if not isinstance(seq, Iterable):
+        raise ValueError('provided sequence MUST be iterable')
+    if not isinstance(seq, Sequence):
+        seq = list(seq)
     return sum(seq) / len(seq)
 
 
