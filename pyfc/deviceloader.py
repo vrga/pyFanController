@@ -30,10 +30,9 @@ def generate_hddtemp(input_config: SectionProxy) -> List[HDDTemp]:
 
 def generate_drive(input_config: SectionProxy) -> List[DriveDevice]:
     specific_devices = input_config.getlist('diskIDs')
-    target_sensor_names = input_config.getlist('diskSensors', None)
     devices = []
     for device_id in specific_devices:
-        devices.extend(from_disk_by_id(device_id, [s.strip() for s in target_sensor_names.split(',')] if target_sensor_names else None))
+        devices.extend(from_disk_by_id(device_id, input_config.getlist('diskSensors', None)))
 
     return list(set(devices))
 
