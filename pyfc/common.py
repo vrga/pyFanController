@@ -76,6 +76,8 @@ def mean(seq: Iterable) -> float:
         seq = list(seq)
     if len(seq) == 1:
         return float(seq[0])
+    if len(seq) == 0:
+        raise ValueError('sequence must have at least one value.')
     return sum(seq) / len(seq)
 
 

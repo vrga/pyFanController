@@ -39,8 +39,12 @@ class TemperatureController:
             method which runs the thing.
             If reported temperature is 0, take previous temp
         """
-        temp = mean([input_dev.get_temp() for input_dev in self.inputs])
-        speed = self.get_speed(temp)
+        try:
+            temp = mean([input_dev.get_temp() for input_dev in self.inputs])
+            speed = self.get_speed(temp)
+        except ValueError:
+            speed = 128
+
         for output_dev in self.outputs:
             output_dev.set_speed(speed)
 
