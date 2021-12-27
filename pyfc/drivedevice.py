@@ -74,11 +74,15 @@ def create_device(path: Path, sensor_name: str = None):
 
 def _resolve_sensors_for_device_path(device_path: Path, expected_sensor_name: str):
     for hwmon in device_path.iterdir():
-        hwmon_path = hwmon.joinpath('name')
-        if hwmon_path.exists() and hwmon_path.read_text('utf-8') == f'{expected_sensor_name}\n':
-            for full_sensor_path in hwmon.iterdir():
-                if full_sensor_path.name.startswith('temp') and full_sensor_path.name.endswith('input'):
-                    yield full_sensor_path
+        yield from _resolve_direct_sensors_for_hwmon_dir(hwmon, expected_sensor_name)
+
+
+def _resolve_direct_sensors_for_hwmon_dir(hwmon: Path, expected_sensor_name: str):
+    hwmon_path = hwmon.joinpath('name')
+    if hwmon_path.exists() and hwmon_path.read_text('utf-8') == f'{expected_sensor_name}\n':
+        for full_sensor_path in hwmon.iterdir():
+            if full_sensor_path.name.startswith('temp') and full_sensor_path.name.endswith('input'):
+                yield full_sensor_path
 
 
 class DriveDevice(InputDevice, ABC):
@@ -115,7 +119,12 @@ def _match_hwmon_by_device(match_path: Path):
         for hwmon_dir in hwmon_path.iterdir():
             _hwmon_paths[hwmon_dir.joinpath('device').resolve(True)] = hwmon_dir
 
-    return _hwmon_paths[match_path]
+    for path, hwmon_dir in _hwmon_paths.items():
+        potential_match = set(match_path.parts).difference(path.parts)
+        if len(potential_match) < 3:
+            return hwmon_dir
+
+    raise ValueError('No match found for device "%s"', match_path)
 
 
 class ATADrive(DriveDevice):
@@ -150,17 +159,18 @@ class NVMeDrive(DriveDevice):
         nvme_path = Path(f'/sys/class/nvme/{self.device_name[:-2]}')
 
         def _match_sensor_path(path: Path):
-            for sensor_path in _resolve_sensors_for_device_path(path, 'nvme'):
-                if self.sensor_name:
-                    if try_and_find_label_for_input(sensor_path) == self.sensor_name:
-                        yield LMSensorsInput(sensor_path)
-                else:
+            if self.sensor_name:
+                if try_and_find_label_for_input(sensor_path) == self.sensor_name:
                     yield LMSensorsInput(sensor_path)
+            else:
+                yield LMSensorsInput(sensor_path)
 
         for nvme_dir in nvme_path.iterdir():
             if nvme_dir.name.startswith('hwmon'):
-                self.sensors.extend(_match_sensor_path(nvme_dir))
+                for sensor_path in _resolve_sensors_for_device_path(nvme_dir, 'nvme'):
+                    self.sensors.extend(_match_sensor_path(sensor_path))
 
         if not self.sensors:
             true_path = nvme_path.joinpath('device').resolve().joinpath(f'nvme/{self.device_name[:-2]}').resolve()
-            self.sensors.extend(_match_sensor_path(_match_hwmon_by_device(true_path)))
+            for sensor_path in _resolve_direct_sensors_for_hwmon_dir(_match_hwmon_by_device(true_path), 'nvme'):
+                self.sensors.extend(_match_sensor_path(sensor_path))
