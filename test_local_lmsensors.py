@@ -1,10 +1,10 @@
 from collections import deque
 import time
-from pyfc.lmsensorsdevice import LMSensorsInput
+from pyfc.lmsensorsdevice import LMSensorsTempInput
 
 sensors = []
 for dev in ('nvme', 'coretemp', 'pch_cannonlake', 'iwlwifi_1'):
-    sensors.extend(LMSensorsInput.from_path(dev, 'temp1_input'))
+    sensors.extend(LMSensorsTempInput.from_path(dev, 'temp1_input'))
 
 readings = {}
 for _ in range(180):
@@ -13,7 +13,7 @@ for _ in range(180):
         if devs not in readings:
             readings[devs] = deque(maxlen=32)
 
-        readings[devs].append(round(t.get_temp(), 2))
+        readings[devs].append(round(t.get_value(), 2))
     time.sleep(1)
 
 for dev, reading in readings.items():

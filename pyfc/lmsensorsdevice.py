@@ -40,7 +40,7 @@ class LMSensorsDevice:
         raise FileNotFoundError(f'Could not find hwmon device named: "{device_name}"')
 
 
-class LMSensorsInput(InputDevice, LMSensorsDevice):
+class LMSensorsTempInput(InputDevice, LMSensorsDevice):
     """
     Class to handle access to temperatures from lm-sensors
     Because the py3sensors thing is a bit clunky...
@@ -49,7 +49,7 @@ class LMSensorsInput(InputDevice, LMSensorsDevice):
     """
 
     @classmethod
-    def from_path(cls, sensor_name: str, device_name: str) -> List['LMSensorsInput']:
+    def from_path(cls, sensor_name: str, device_name: str) -> List['LMSensorsTempInput']:
         return [cls(path.joinpath(device_name)) for path in cls.path_from_device_name(sensor_name)]
 
     def __init__(self, sensor_path: Path):
@@ -57,10 +57,10 @@ class LMSensorsInput(InputDevice, LMSensorsDevice):
         :param sensor_path: path to lm-sensors file
         """
         self.path = sensor_path
-        self.name = try_and_find_label_for_input(sensor_path)
+        super().__init__(try_and_find_label_for_input(sensor_path))
         self.temp = ValueBuffer(self.name, 35)
 
-    def get_temp(self) -> float:
+    def get_value(self) -> float:
         try:
             with open(self.path, 'r') as reader:
                 value = reader.read()
@@ -89,7 +89,7 @@ class LMSensorsOutput(OutputDevice, LMSensorsDevice):
         return [cls(path, device_name, enable_file) for path in cls.path_from_device_name(sensor_name)]
 
     def __init__(self, sensor_path: Path, device_name: str, enable_file: str):
-        super().__init__()
+        super().__init__(device_name)
         self.output_file = sensor_path.joinpath(device_name)
         self.enable_file = sensor_path.joinpath(enable_file)
         self.old_value = '2'  # default to '2' as old value, this means "automatic fan speed control enabled"
@@ -125,7 +125,7 @@ class LMSensorsOutput(OutputDevice, LMSensorsDevice):
         if not self.enabled:
             return
 
-        speed = round(self.speeds.mean())
+        speed = round(self.values.mean())
         try:
             log.debug('Speed for device: %s set to %s', self.output_file, int(lerp(speed, 0, 255, 0, 100)))
             with open(self.output_file, 'a') as writer:

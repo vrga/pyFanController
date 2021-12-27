@@ -1,6 +1,6 @@
 from collections import deque
 import time
-from pyfc.lmsensorsdevice import LMSensorsInput
+from pyfc.lmsensorsdevice import LMSensorsTempInput
 
 from pyfc.drivedevice import from_disk_by_id
 
@@ -15,7 +15,7 @@ for _ in range(15):
         if devs not in readings:
             readings[devs] = deque(maxlen=32)
 
-        readings[devs].append(round(t.get_temp(), 2))
+        readings[devs].append(round(t.get_value(), 2))
     # time.sleep(1)
 
 for dev, reading in readings.items():

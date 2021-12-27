@@ -24,7 +24,7 @@ for _ in range(10):
         if devs not in readings:
             readings[devs] = []
 
-        readings[devs].append(t.get_temp())
+        readings[devs].append(t.get_value())
 
 for dev, reading in readings.items():
     print(dev)

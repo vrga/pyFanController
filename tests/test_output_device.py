@@ -12,10 +12,11 @@ class TestOutputDevice(TestCase):
         self.assertTrue(self.test_output.enabled)
 
     def test_set_speed(self):
-        self.assertFalse(self.test_output.set_speed(100))
+        self.test_output.set_value(100)
         self.test_output.enable()
         self.assertTrue(self.test_output.enabled)
-        self.assertTrue(self.test_output.set_speed(100))
+        self.test_output.set_value(100)
+        self.assertAlmostEqual(100.0, self.test_output.values.mean())
 
     def test_disable(self):
         self.test_output.enable()

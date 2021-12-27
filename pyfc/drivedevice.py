@@ -6,7 +6,7 @@ from typing import List
 from .common import InputDevice, mean, NoSensorsFoundException
 import logging
 
-from .lmsensorsdevice import LMSensorsInput, try_and_find_label_for_input
+from .lmsensorsdevice import LMSensorsTempInput, try_and_find_label_for_input
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +48,8 @@ def from_disk_by_id(disk_name: str, sensor_name: str = None):
 class DriveDevice(InputDevice, ABC):
 
     def __init__(self, device_path: Path, device_name: str, sensor_name: str = None):
+
+        super().__init__(device_name)
         self.device_path = device_path
         self.real_path = device_path.resolve()
 
@@ -67,15 +69,15 @@ class DriveDevice(InputDevice, ABC):
     def __repr__(self):
         return str(self.device_path)
 
-    def get_temp(self) -> float:
-        return mean((s.get_temp() for s in self.sensors))
+    def get_value(self) -> float:
+        return mean((s.get_value() for s in self.sensors))
 
     def _validate(self):
         if not self.sensors:
             raise NoSensorsFoundException(f'No sensors found for device: "{self.real_path}"')
 
     def _match_sensor_path(self, path: Path):
-        sensor = LMSensorsInput(path)
+        sensor = LMSensorsTempInput(path)
         if self.sensor_name and sensor.name == self.sensor_name:
             yield sensor
         else:
@@ -152,7 +154,7 @@ class NVMeDrive(DriveDevice):
 
     def __init__(self, device_path: Path, device_name: str, sensor_name: str = None):
         super().__init__(device_path, device_name, sensor_name)
-        self.sensors: List[LMSensorsInput] = []
+        self.sensors: List[LMSensorsTempInput] = []
         self.find_hwmon_sensors()
         self._validate()
 
@@ -161,7 +163,7 @@ class NVMeDrive(DriveDevice):
         nvme_path = Path(f'/sys/class/nvme/{self.real_path.name[:-2]}')
 
         def _match_sensor_path(path: Path):
-            sensor = LMSensorsInput(path)
+            sensor = LMSensorsTempInput(path)
             if self.sensor_name and sensor.name == self.sensor_name:
                 yield sensor
             else:

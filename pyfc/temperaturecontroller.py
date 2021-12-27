@@ -1,12 +1,12 @@
 import logging
 from typing import List, Union
 
-from .common import InputDevice, OutputDevice, lerp, mean
+from .common import InputDevice, OutputDevice, Controller, lerp, mean
 
 log = logging.getLogger(__name__)
 
 
-class TemperatureController:
+class TemperatureController(Controller):
     """
         raw temperature controller
     """
@@ -40,13 +40,13 @@ class TemperatureController:
             If reported temperature is 0, take previous temp
         """
         try:
-            temp = mean([input_dev.get_temp() for input_dev in self.inputs])
+            temp = mean([input_dev.get_value() for input_dev in self.inputs])
             speed = self.get_speed(temp)
         except ValueError:
             speed = 128
 
         for output_dev in self.outputs:
-            output_dev.set_speed(speed)
+            output_dev.set_value(speed)
 
     def apply_candidates(self):
         return self.outputs
@@ -59,8 +59,8 @@ class TemperatureController:
         for output_dev in self.outputs:
             output_dev.disable()
 
-    def valid(self):
-        return self.inputs and self.outputs and self.speeds
+    def valid(self) -> bool:
+        return bool(self.inputs and self.outputs and self.speeds)
 
     def __del__(self):
         self.disable()

@@ -7,13 +7,35 @@ class NoSensorsFoundException(RuntimeError):
     pass
 
 
+class Controller(metaclass=ABCMeta):
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def enable(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def disable(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def valid(self) -> bool:
+        raise NotImplementedError
+
+
 class InputDevice(metaclass=ABCMeta):
     """
     Abstract class for input devices.
     """
 
+    def __init__(self, name):
+        self.name = name
+        self.values = ValueBuffer(name, 128)
+
     @abstractmethod
-    def get_temp(self) -> float:
+    def get_value(self) -> float:
         raise NotImplementedError
 
 
@@ -22,11 +44,12 @@ class OutputDevice(metaclass=ABCMeta):
     Abstract class for output devices.
     """
 
-    def __init__(self):
-        self.speeds = ValueBuffer('', 128)
+    def __init__(self, name):
+        self.name = name
+        self.values = ValueBuffer(name, 128)
 
-    def set_speed(self, speed: Union[int, float]):
-        self.speeds.update(speed)
+    def set_value(self, value: Union[int, float]):
+        self.values.update(value)
 
     @abstractmethod
     def apply(self):
@@ -41,26 +64,50 @@ class OutputDevice(metaclass=ABCMeta):
         raise NotImplementedError
 
 
+class PassthroughController(Controller):
+
+    def __init__(self, inputs=Sequence[InputDevice], outputs=Sequence[OutputDevice]):
+        self.inputs: Sequence[InputDevice] = inputs
+        self.outputs: Sequence[OutputDevice] = outputs
+
+    def run(self):
+        for idx, input_reader in enumerate(self.inputs):
+            output = self.outputs[idx]
+            output.name = input_reader.name
+            output.values.name = input_reader.name
+            output.set_value(input_reader.get_value())
+
+    def enable(self):
+        pass
+
+    def disable(self):
+        pass
+
+    def valid(self) -> bool:
+        return bool(self.inputs and self.outputs) and len(self.inputs) == len(self.outputs)
+
+
 class DummyInput(InputDevice):
     def __init__(self):
+        super().__init__('dummy')
         self.temp = 0
 
-    def get_temp(self) -> float:
+    def get_value(self):
         return self.temp
 
-    def set_temp(self, value):
+    def set_value(self, value):
         self.temp = value
 
 
 class DummyOutput(OutputDevice):
     def __init__(self):
-        super().__init__()
+        super().__init__('dummy')
         self.speed = None
         self.enabled = False
 
     def apply(self):
         if self.enabled:
-            self.speed = round(self.speeds.mean())
+            self.speed = round(self.values.mean())
 
     def enable(self):
         self.enabled = True
@@ -107,5 +154,5 @@ class ValueBuffer:
     def mean(self) -> float:
         try:
             return mean(self.buffer)
-        except ZeroDivisionError:
+        except (ValueError, ZeroDivisionError):
             return self._default_value

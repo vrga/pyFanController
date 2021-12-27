@@ -26,6 +26,7 @@ class HDDTemp(InputDevice):
 
         self.available = False
         self._time_read_sec = time_read_sec
+        super().__init__(self.group_name)
 
     @property
     def temps(self) -> TemperatureGroup:
@@ -43,7 +44,7 @@ class HDDTemp(InputDevice):
         except ZeroDivisionError:
             return 35.0
 
-    def get_temp(self):
+    def get_value(self):
         """
         Get and parse HDD temperatures.
         Works for whatever number of HDD's you might have.

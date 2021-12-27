@@ -14,6 +14,7 @@ class SerialOutput(OutputDevice):
     """
 
     def __init__(self, device_number: str, serial_baud: int = 9600):
+        super().__init__(f'serial-{device_number}')
         self.serial = Serial()
         self.serial.baudrate = serial_baud
         self.serial_available = False
@@ -35,7 +36,7 @@ class SerialOutput(OutputDevice):
         :param speed: speed to set
         :type speed: int
         """
-        speed = round(self.speeds.mean())
+        speed = round(self.values.mean())
         if self.serial_available:
             try:
                 self.serial.open()

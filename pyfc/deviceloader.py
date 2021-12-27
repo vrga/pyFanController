@@ -1,25 +1,26 @@
 import logging
-from typing import List
+from typing import List, Iterable
 from configparser import SectionProxy
 
 from .common import InputDevice, OutputDevice, lerp_range
 from .drivedevice import DriveDevice, from_disk_by_id
+from .influxoutput import InfluxLineOutput
 from .temperaturecontroller import TemperatureController
-from .lmsensorsdevice import LMSensorsInput, LMSensorsOutput
+from .lmsensorsdevice import LMSensorsTempInput, LMSensorsOutput
 from .hddtemp import HDDTemp
 from .serialoutput import SerialOutput
 
 log = logging.getLogger(__name__)
 
 
-def generate_component_temp(input_config: SectionProxy) -> List[LMSensorsInput]:
+def generate_component_temp_input(input_config: SectionProxy) -> Iterable[LMSensorsTempInput]:
     specific_devices = input_config.getlist('temperatureMonitorDeviceName')
     for idx, path in enumerate(input_config.getlist('temperatureMonitor')):
-        for s in LMSensorsInput.from_path(specific_devices[idx], path):
+        for s in LMSensorsTempInput.from_path(specific_devices[idx], path):
             yield s
 
 
-def generate_hddtemp(input_config: SectionProxy) -> List[HDDTemp]:
+def generate_hddtemp_input(input_config: SectionProxy) -> Iterable[HDDTemp]:
     specific_devices = input_config.getlist('hddtempDevices', None)
     yield HDDTemp(
             input_config.get('hddtempHost', 'localhost'),
@@ -28,7 +29,7 @@ def generate_hddtemp(input_config: SectionProxy) -> List[HDDTemp]:
     )
 
 
-def generate_drive(input_config: SectionProxy) -> List[DriveDevice]:
+def generate_drive_input(input_config: SectionProxy) -> List[DriveDevice]:
     specific_devices = input_config.getlist('diskIDs')
     devices = []
     for device_id in specific_devices:
@@ -39,9 +40,9 @@ def generate_drive(input_config: SectionProxy) -> List[DriveDevice]:
 
 def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
     input_map = {
-        'componentTemp': generate_component_temp,
-        'hddtemp':       generate_hddtemp,
-        'driveDevice':   generate_drive,
+        'componentTemp': generate_component_temp_input,
+        'hddtemp':       generate_hddtemp_input,
+        'driveDevice':   generate_drive_input,
     }
 
     try:
@@ -51,22 +52,51 @@ def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
         return []
 
 
-def determine_outputs(device_config: SectionProxy) -> List[OutputDevice]:
-    output_devices = []
-    if device_config.get('outputType') == 'fanPWM':
-        output_device = device_config.get('outputDeviceName')
-        specific_device_outputs = [k.strip() for k in device_config.get('device').split(',')]
-        specific_device_output_enablers = [k.strip() for k in device_config.get('outputEnabler').split(',')]
+def generate_pwm_output(device_config: SectionProxy) -> Iterable[LMSensorsOutput]:
+    output_device = device_config.get('outputDeviceName')
+    specific_device_outputs = device_config.getlist('device')
+    specific_device_output_enablers = device_config.getlist('outputEnabler')
 
-        for idx, path in enumerate(specific_device_outputs):
-            output_devices.extend(LMSensorsOutput.from_path(output_device, path, specific_device_output_enablers[idx]))
+    for idx, path in enumerate(specific_device_outputs):
+        yield LMSensorsOutput.from_path(output_device, path, specific_device_output_enablers[idx])
 
-    elif device_config.get('outputType') == 'serial':
-        output_devices.append(SerialOutput(device_config.getint('device')))
+
+def generate_serial_output(device_config: SectionProxy) -> Iterable[SerialOutput]:
+    yield SerialOutput(device_config.getint('device'))
+
+
+def generate_influx_output(device_config: SectionProxy) -> Iterable[InfluxLineOutput]:
+    auth = (device_config.get('influxServerUser', None), device_config.get('influxServerPassword', None))
+    if not (auth[0] and auth[1]):
+        auth = None
+
+    tag_keys = device_config.getlist('influxTagKeys', None)
+    tag_values = device_config.getlist('influxTagValues', None)
+    if tag_keys and tag_values:
+        tags = dict(zip(tag_keys, tag_values))
     else:
-        raise ValueError('No output device created, check the configuration!')
+        tags = {}
 
-    return list(output_devices)
+    yield InfluxLineOutput(
+            device_config.get('influxServerURL'),
+            auth,
+            device_config.get('influxGroup'),
+            device_config.get('influxMeasurementName'),
+            tags
+    )
+
+
+def determine_outputs(device_config: SectionProxy) -> List[OutputDevice]:
+    output_map = {
+        'fanPWM': generate_pwm_output,
+        'serial': generate_serial_output,
+        'influx': generate_influx_output,
+    }
+    try:
+        return list(output_map[device_config.get('outputType')](device_config))
+    except (KeyError, FileNotFoundError):
+        log.error('Failed creating device!', exc_info=True)
+    return []
 
 
 def create_device(device_name: str, device_config: SectionProxy) -> TemperatureController:
@@ -135,7 +165,6 @@ def interpolate_temps(device_data: SectionProxy) -> List[int]:
         previous_range = current_range
         previous_max_speed = current_max_speed
 
-    speeds.extend(float(last[1]) for _ in range(last[0], 101))
+    speeds.extend(float(last[1]) for _ in range(last[0], 102))
 
-    retval = [int(val) for val in lerp_range(speeds, 0, 100, 0, 255)]
-    return retval
+    return [int(val) for val in lerp_range(speeds, 0, 100, 0, 255)]
