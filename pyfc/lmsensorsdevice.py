@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 
 from .common import InputDevice, OutputDevice, lerp
+from .tempcontainers import TemperaturesBuffer
 
 log = logging.getLogger(__name__)
 
@@ -51,16 +52,20 @@ class LMSensorsInput(InputDevice, LMSensorsDevice):
         :param sensor_path: path to lm-sensors file
         """
         self.path = sensor_path.joinpath(device_name)
+        self.temp = TemperaturesBuffer(self.path)
 
     def get_temp(self) -> float:
         try:
             with open(self.path, 'r') as reader:
-                temp = reader.read()[:-4]
+                value = reader.read()
+                floatable = '{}.{}'.format(value[:-4], value[-4:])
+                self.temp.update(float(floatable))
         except IOError:
-            temp = 0
             log.error('Could not read file: {}', self.path)
-
-        return float(temp)
+        try:
+            return self.temp.mean()
+        except ZeroDivisionError:
+            return 35.0
 
 
 class LMSensorsOutput(OutputDevice, LMSensorsDevice):

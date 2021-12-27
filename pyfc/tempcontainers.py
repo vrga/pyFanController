@@ -12,13 +12,10 @@ class TemperaturesBuffer:
         self.buffer = deque(maxlen=32)
 
     def update(self, value: float):
-        self.buffer.append(mean((value, self.mean())))
+        self.buffer.append(value)
 
     def mean(self) -> float:
-        try:
-            return mean(self.buffer)
-        except ZeroDivisionError:
-            return 35.0
+        return mean(self.buffer)
 
 
 class TemperatureGroup:
