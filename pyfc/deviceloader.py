@@ -49,7 +49,7 @@ def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
 
     try:
         return input_map[device_config.get('inputType')](device_config)
-    except KeyError:
+    except (KeyError, FileNotFoundError):
         log.error('Failed creating device!', exc_info=True)
         return []
 
