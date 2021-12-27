@@ -42,9 +42,9 @@ def generate_drive(input_config: SectionProxy) -> List[DriveDevice]:
 
 def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
     input_map = {
-        'componentTemp': generate_component_temp(device_config),
-        'hddtemp':       generate_hddtemp(device_config),
-        'driveDevice':   generate_drive(device_config),
+        'componentTemp': generate_component_temp,
+        'hddtemp':       generate_hddtemp,
+        'driveDevice':   generate_drive,
     }
 
     try:
