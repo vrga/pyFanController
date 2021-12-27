@@ -58,7 +58,7 @@ def create_device(path: Path, sensor_name: str = None):
 
     device_type = matches.group(1)
     found_name = matches.group(2)
-    real_path = path.resolve(True)
+    real_path = path.resolve()
     device_name = real_path.name
 
     mapping = {
@@ -132,7 +132,7 @@ class ATADrive(DriveDevice):
             for sensor_path in _resolve_sensors_for_device_path(hwmon_path, 'drivetemp'):
                 self.sensors.append(LMSensorsInput(sensor_path))
         else:
-            true_path = device_path.resolve(True)
+            true_path = device_path.resolve()
             for sensor_path in _resolve_sensors_for_device_path(_match_hwmon_by_device(true_path), 'drivetemp'):
                 self.sensors.append(LMSensorsInput(sensor_path))
 
@@ -161,5 +161,5 @@ class NVMeDrive(DriveDevice):
         if hwmon_path.exists():
             self.sensors.extend(_match_sensor_path(hwmon_path))
         else:
-            true_path = device_path.resolve(True)
+            true_path = device_path.resolve()
             self.sensors.extend(_match_sensor_path(_match_hwmon_by_device(true_path)))
