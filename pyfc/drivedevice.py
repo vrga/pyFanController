@@ -54,9 +54,9 @@ def create_device(path: Path, sensor_name: str = None):
         'nvme': NVMeDrive,
     }
 
-    if device_type == 'nvme':
+    try:
         return mapping[device_type](path, real_path, found_name, device_name, sensor_name)
-    else:
+    except KeyError:
         raise UnsupportedDeviceTypeException(f'Unsupported device type: "{device_type}"')
 
 
