@@ -59,5 +59,8 @@ class TemperatureController:
         for output_dev in self.outputs:
             output_dev.disable()
 
+    def valid(self):
+        return self.inputs and self.outputs and self.speeds
+
     def __del__(self):
         self.disable()

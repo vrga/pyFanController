@@ -8,6 +8,8 @@ from pyfc.fancontroller import FanController
 from pyfc.deviceloader import create_device
 from pathlib import Path
 
+log = logging.getLogger(__name__)
+
 
 def main():
     """
@@ -32,6 +34,12 @@ def main():
     device_identifiers = config['base']['devices'].split(', ')
     device_configuration = {identifier: config[identifier] for identifier in device_identifiers}
     devices = {name: create_device(name, config) for name, config in device_configuration.items()}
+
+    for name, device in devices.items():
+        if not device.valid():
+            devices.pop(name)
+            log.warning('Configured device is not valid, removing controller. %s', name)
+
     fan_control = FanController(
             Path(config['base']['pid_file']).absolute(),
             config['base'].getint('interval', 5),

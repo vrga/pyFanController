@@ -69,7 +69,7 @@ def determine_outputs(device_config: SectionProxy) -> List[OutputDevice]:
     return list(output_devices)
 
 
-def create_device(device_name: str, device_config: SectionProxy):
+def create_device(device_name: str, device_config: SectionProxy) -> TemperatureController:
     """
     creates device from config
     """
@@ -81,10 +81,7 @@ def create_device(device_name: str, device_config: SectionProxy):
             interpolate_temps(device_config)
     )
 
-    if not device:
-        return None
-    else:
-        return device
+    return device
 
 
 def interpolate_temps(device_data: SectionProxy) -> List[int]:
