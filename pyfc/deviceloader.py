@@ -58,7 +58,7 @@ def generate_pwm_output(device_config: SectionProxy) -> Iterable[LMSensorsOutput
     specific_device_output_enablers = device_config.getlist('outputEnabler')
 
     for idx, path in enumerate(specific_device_outputs):
-        yield LMSensorsOutput.from_path(output_device, path, specific_device_output_enablers[idx])
+        yield from LMSensorsOutput.from_path(output_device, path, specific_device_output_enablers[idx])
 
 
 def generate_serial_output(device_config: SectionProxy) -> Iterable[SerialOutput]:
