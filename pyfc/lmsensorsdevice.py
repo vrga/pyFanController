@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import List
 
-from .common import InputDevice, OutputDevice, lerp, mean, ValueBuffer
+from .common import InputDevice, OutputDevice, lerp, ValueBuffer
 
 log = logging.getLogger(__name__)
 
