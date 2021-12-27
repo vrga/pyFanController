@@ -1,4 +1,4 @@
-import abc
+import re
 from abc import ABC
 from pathlib import Path
 from typing import List
@@ -37,6 +37,7 @@ def from_disk_by_id(disk_name: str, sensor_name: str = None):
             if device and device not in devices:
                 devices.append(device)
         except UnsupportedDeviceTypeException:
+            log.warning('Unsupported device: path "%s", name: "%s"', device_path, disk_name)
             continue
 
     if devices:
@@ -46,9 +47,11 @@ def from_disk_by_id(disk_name: str, sensor_name: str = None):
 
 
 def create_device(path: Path, sensor_name: str = None):
-    name = path.name.split('-')
-    device_type = name[0]
-    found_name = name[1]
+    regex = r'^(.*?)-(.*)(?:-part\d+)?$'
+    matches = re.match(regex, path.name)
+
+    device_type = matches.group(0)
+    found_name = matches.group(1)
     real_path = path.resolve(True)
     device_name = real_path.name
 
