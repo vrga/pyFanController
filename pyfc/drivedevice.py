@@ -27,10 +27,15 @@ def from_disk_by_id(disk_name: str, sensor_name: str = None):
                 device = create_device(device_path, sensor_name)
             elif disk_name in device_path.name:
                 log.debug('potential device match: %s, matches: %s', device_path, disk_name)
-                regex = r'^(.*?)-(.*)(-part\d+)?$'
+                regex = r'^(.*?)-(.*?)(-part\d+)?$'
                 matches = re.match(regex, device_path.name)
                 guess_path = disk_lookup_base.joinpath('-'.join(matches.group(1, 2)))
-                if (not guess_path.exists()) or matches.group(3) is not None:
+                if not guess_path.exists():
+                    log.debug('guessed path incorrect for device: %s', device_path)
+                    continue
+
+                if matches.group(3) is not None:
+                    log.debug('skipping due to having hit partition on device: %s', device_path)
                     continue
 
                 device = create_device(guess_path, sensor_name)
@@ -48,7 +53,7 @@ def from_disk_by_id(disk_name: str, sensor_name: str = None):
 
 
 def create_device(path: Path, sensor_name: str = None):
-    regex = r'^(.*?)-(.*)(?:-part\d+)?$'
+    regex = r'^(.*?)-(.*?)(-part\d+)?$'
     matches = re.match(regex, path.name)
 
     device_type = matches.group(1)
