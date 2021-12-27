@@ -30,7 +30,7 @@ def from_disk_by_id(disk_name: str, sensor_name: str = None):
                 regex = r'^(.*?)-(.*)(-part\d+)?$'
                 matches = re.match(regex, device_path.name)
                 guess_path = disk_lookup_base.joinpath('-'.join(matches.group(1, 2)))
-                if not guess_path.exists() or matches.group(3) is not None:
+                if (not guess_path.exists()) or matches.group(3) is not None:
                     continue
 
                 device = create_device(guess_path, sensor_name)
