@@ -1,5 +1,5 @@
 import logging
-from typing import List, Union
+from typing import List, Union, Iterable
 
 from .common import InputDevice, OutputDevice, Controller, lerp, mean
 
@@ -11,7 +11,7 @@ class TemperatureController(Controller):
         raw temperature controller
     """
 
-    def __init__(self, input_devices: List[InputDevice], output_devices: List[OutputDevice], speeds: List[int]):
+    def __init__(self, input_devices: Iterable[InputDevice], output_devices: Iterable[OutputDevice], speeds: List[int]):
         """
         :param input_devices: Input device from which we take the temperature.
         :param output_devices: Output device to which we set the speed

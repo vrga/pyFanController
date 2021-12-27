@@ -38,7 +38,7 @@ def generate_drive_input(input_config: SectionProxy) -> List[DriveDevice]:
     return list(set(devices))
 
 
-def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
+def determine_inputs(device_config: SectionProxy) -> Iterable[InputDevice]:
     input_map = {
         'componentTemp': generate_component_temp_input,
         'hddtemp':       generate_hddtemp_input,
@@ -86,14 +86,14 @@ def generate_influx_output(device_config: SectionProxy) -> Iterable[InfluxLineOu
     )
 
 
-def determine_outputs(device_config: SectionProxy) -> List[OutputDevice]:
+def determine_outputs(device_config: SectionProxy) -> Iterable[OutputDevice]:
     output_map = {
         'fanPWM': generate_pwm_output,
         'serial': generate_serial_output,
         'influx': generate_influx_output,
     }
     try:
-        return list(output_map[device_config.get('outputType')](device_config))
+        return output_map[device_config.get('outputType')](device_config)
     except (KeyError, FileNotFoundError):
         log.error('Failed creating device!', exc_info=True)
     return []
