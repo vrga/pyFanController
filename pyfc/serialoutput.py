@@ -2,8 +2,7 @@ import logging
 from serial import Serial, SerialException
 from serial.tools import list_ports
 
-from .common import OutputDevice
-
+from .common import OutputDevice, mean
 
 log = logging.getLogger(__name__)
 
@@ -29,13 +28,14 @@ class SerialOutput(OutputDevice):
         except SerialException:
             self.serial_available = False
 
-    def set_speed(self, speed):
+    def _apply(self):
         """
         Open serial interface, convert to byte, write data, close serial interface.
         Pray to satan nothing blows up.
         :param speed: speed to set
         :type speed: int
         """
+        speed = round(mean(self.speeds))
         if self.serial_available:
             try:
                 self.serial.open()

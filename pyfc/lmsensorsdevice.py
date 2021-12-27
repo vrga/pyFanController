@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import List
 
-from .common import InputDevice, OutputDevice, lerp
+from .common import InputDevice, OutputDevice, lerp, mean
 from .tempcontainers import TemperaturesBuffer
 
 log = logging.getLogger(__name__)
@@ -90,6 +90,7 @@ class LMSensorsOutput(OutputDevice, LMSensorsDevice):
         return [cls(path, device_name, enable_file) for path in cls.path_from_device_name(sensor_name)]
 
     def __init__(self, sensor_path: Path, device_name: str, enable_file: str):
+        super().__init__()
         self.output_file = sensor_path.joinpath(device_name)
         self.enable_file = sensor_path.joinpath(enable_file)
         self.old_value = '2'  # default to '2' as old value, this means "automatic fan speed control enabled"
@@ -121,18 +122,17 @@ class LMSensorsOutput(OutputDevice, LMSensorsDevice):
             log.exception('Error writing to enabling file: %s', self.enable_file)
             self.enabled = False
 
-    def set_speed(self, speed: float):
+    def _apply(self):
         if not self.enabled:
-            return False
+            return
 
+        speed = round(mean(self.speeds))
         try:
             log.debug('Speed for device: %s set to %s', self.output_file, int(lerp(speed, 0, 255, 0, 100)))
             with open(self.output_file, 'a') as writer:
                 writer.write(str(speed))
-                return True
         except (IOError, PermissionError):
             log.exception('Error writing speed to device: %s', self.output_file)
-            return False
 
     def disable(self):
         """

@@ -3,6 +3,7 @@ from typing import List
 from configparser import SectionProxy
 
 from .common import InputDevice, OutputDevice, lerp_range
+from .drivedevice import DriveDevice, from_disk_by_id
 from .temperaturecontroller import TemperatureController
 from .lmsensorsdevice import LMSensorsInput, LMSensorsOutput
 from .hddtemp import HDDTemp
@@ -11,27 +12,45 @@ from .serialoutput import SerialOutput
 log = logging.getLogger(__name__)
 
 
-def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
-    input_devices = []
-    if device_config.get('inputType') == 'componentTemp':
-        specific_devices = [k.strip() for k in device_config.get('temperatureMonitorDeviceName').split(',')]
-        for idx, path in enumerate([k.strip() for k in device_config.get('temperatureMonitor').split(',')]):
-            input_devices.extend(LMSensorsInput.from_path(specific_devices[idx], path))
-    elif device_config.get('inputType') == 'hddtemp':
-        specific_devices = device_config.get('hddtempDevices', None)
-        if specific_devices is not None:
-            specific_devices = specific_devices.split(',')
-        input_devices.append(
-                HDDTemp(
-                        device_config.get('hddtempHost', 'localhost'),
-                        int(device_config.get('hddtempPort', '7634')),
-                        specific_devices
-                )
-        )
-    else:
-        raise ValueError('No Input device created, check the configuration!')
+def generate_component_temp(input_config: SectionProxy) -> List[LMSensorsInput]:
+    specific_devices = [k.strip() for k in input_config.get('temperatureMonitorDeviceName').split(',')]
+    for idx, path in enumerate([k.strip() for k in input_config.get('temperatureMonitor').split(',')]):
+        for s in LMSensorsInput.from_path(specific_devices[idx], path):
+            yield s
 
-    return input_devices
+
+def generate_hddtemp(input_config: SectionProxy) -> List[HDDTemp]:
+    specific_devices = input_config.get('hddtempDevices', None)
+    if specific_devices is not None:
+        specific_devices = specific_devices.split(',')
+    yield HDDTemp(
+            input_config.get('hddtempHost', 'localhost'),
+            int(input_config.get('hddtempPort', '7634')),
+            specific_devices
+    )
+
+
+def generate_drive(input_config: SectionProxy) -> List[DriveDevice]:
+    specific_devices = input_config.get('diskIDs').split(',')
+    target_sensor_names = input_config.get('diskSensors', None)
+    devices = []
+    for device_id in specific_devices:
+        devices.extend(from_disk_by_id(device_id, target_sensor_names.split(',') if target_sensor_names else None))
+
+    return list(set(devices))
+
+
+def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
+    input_map = {
+        'componentTemp': generate_component_temp(device_config),
+        'hddtemp':       generate_hddtemp(device_config),
+        'driveDevice':   generate_drive(device_config),
+    }
+
+    try:
+        return input_map[device_config.get('inputType')](device_config)
+    except KeyError:
+        raise ValueError('No Input device created, check the configuration!')
 
 
 def determine_outputs(device_config: SectionProxy) -> List[OutputDevice]:
@@ -49,7 +68,7 @@ def determine_outputs(device_config: SectionProxy) -> List[OutputDevice]:
     else:
         raise ValueError('No output device created, check the configuration!')
 
-    return output_devices
+    return list(output_devices)
 
 
 def create_device(device_name: str, device_config: SectionProxy):

@@ -3,12 +3,16 @@ from abc import ABC
 from pathlib import Path
 from typing import List
 
-from .common import InputDevice, mean
+from .common import InputDevice, mean, NoSensorsFoundException
 import logging
 
 from .lmsensorsdevice import LMSensorsInput, try_and_find_label_for_input
 
 log = logging.getLogger(__name__)
+
+
+class UnsupportedDeviceTypeException(ValueError):
+    pass
 
 
 def from_disk_by_id(disk_name: str, sensor_name: str = None):
@@ -49,10 +53,11 @@ def create_device(path: Path, sensor_name: str = None):
         'ata':  ATADrive,
         'nvme': NVMeDrive,
     }
+
     if device_type == 'nvme':
         return mapping[device_type](path, real_path, found_name, device_name, sensor_name)
     else:
-        raise ValueError(f'Unsupported device type: "{device_type}"')
+        raise UnsupportedDeviceTypeException(f'Unsupported device type: "{device_type}"')
 
 
 def _resolve_sensors_for_device_path(device_path: Path, expected_sensor_name: str):
@@ -94,7 +99,7 @@ class ATADrive(DriveDevice):
         super().__init__(pretty_path, real_path, found_name, device_name, None)
         self._check_drivetemp()
         if not self.sensors:
-            raise ValueError(f'No sensors found for device: "{real_path}"')
+            raise NoSensorsFoundException(f'No sensors found for device: "{real_path}"')
 
     def _check_drivetemp(self):
         device_path = Path(f'/sys/class/block/{self.device_name}/device/hwmon/')
@@ -109,7 +114,7 @@ class NVMeDrive(DriveDevice):
         self.sensors: List[LMSensorsInput] = []
         self._populate_sensors()
         if not self.sensors:
-            raise ValueError(f'No sensors found for device: "{real_path}"')
+            raise NoSensorsFoundException(f'No sensors found for device: "{real_path}"')
 
     def _populate_sensors(self):
         device_path = Path(f'/sys/class/nvme/{self.device_name[:-2]}/device/hwmon/')

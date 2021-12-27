@@ -57,19 +57,26 @@ class FanController:
         """
         logging.debug(self.devices)
 
-        for name, device in self.devices.items():
+        for device in self.devices.values():
             device.enable()
 
         while self.runnable:
             try:
-                for name, device in self.devices.items():
+                for device in self.devices.values():
                     device.run()
+                outputs = set()
+                for c in self.devices.values():
+                    outputs.update(c.apply_candidates())
+
+                for o in outputs:
+                    o.apply()
+
                 time.sleep(self.interval)
             except Exception as e:
                 logging.exception('Caught exception, bailing.')
                 self.runnable = False
 
-        for name, device in self.devices.items():
+        for device in self.devices.values():
             device.disable()
 
     def run(self):
@@ -80,4 +87,3 @@ class FanController:
             self.start()
         finally:
             self.remove_pid()
-

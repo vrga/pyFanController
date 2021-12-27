@@ -2,6 +2,10 @@ from abc import ABCMeta, abstractmethod
 from typing import List, Union, Iterable, Sequence
 
 
+class NoSensorsFoundException(RuntimeError):
+    pass
+
+
 class InputDevice(metaclass=ABCMeta):
     """
     Abstract class for input devices.
@@ -17,8 +21,18 @@ class OutputDevice(metaclass=ABCMeta):
     Abstract class for output devices.
     """
 
+    def __init__(self):
+        self.speeds = []
+
+    def set_speed(self, speed: Union[int, float]):
+        self.speeds.append(round(speed))
+
+    def apply(self):
+        self._apply()
+        self.speeds.clear()
+
     @abstractmethod
-    def set_speed(self, speed: Union[int, float]) -> bool:
+    def _apply(self):
         raise NotImplementedError
 
     @abstractmethod
@@ -43,14 +57,13 @@ class DummyInput(InputDevice):
 
 class DummyOutput(OutputDevice):
     def __init__(self):
+        super().__init__()
         self.speed = None
         self.enabled = False
 
-    def set_speed(self, speed) -> bool:
+    def _apply(self):
         if self.enabled:
-            self.speed = speed
-            return True
-        return False
+            self.speed = round(mean(self.speeds))
 
     def enable(self):
         self.enabled = True
