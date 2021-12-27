@@ -75,21 +75,21 @@ def create_device(path: Path, sensor_name: str = None):
 def _resolve_sensors_for_device_path(device_path: Path, expected_sensor_name: str):
     sensors = []
     for hwmon in device_path.iterdir():
-        sensors.extend(_resolve_direct_sensors_for_hwmon_dir(hwmon, expected_sensor_name))
+        hwmon_path = hwmon.joinpath('name')
+        if hwmon_path.exists() and hwmon_path.read_text('utf-8') == f'{expected_sensor_name}\n':
+            sensors.extend(_resolve_direct_sensors_for_hwmon_dir(hwmon))
     return sensors
 
 
-def _resolve_direct_sensors_for_hwmon_dir(hwmon: Path, expected_sensor_name: str):
+def _resolve_direct_sensors_for_hwmon_dir(hwmon_dir: Path):
     sensors = []
-    hwmon_path = hwmon.joinpath('name')
-    if hwmon_path.exists() and hwmon_path.read_text('utf-8') == f'{expected_sensor_name}\n':
-        for full_sensor_path in hwmon.iterdir():
-            if full_sensor_path.name.startswith('temp') and full_sensor_path.name.endswith('input'):
-                log.debug('Matched path: %s', full_sensor_path)
-                sensors.append(full_sensor_path)
+    for full_sensor_path in hwmon_dir.iterdir():
+        if full_sensor_path.name.startswith('temp') and full_sensor_path.name.endswith('input'):
+            log.debug('Matched path: %s', full_sensor_path)
+            sensors.append(LMSensorsInput(full_sensor_path))
 
     if not sensors:
-        log.debug('Did not match anything under: %s', hwmon_path)
+        log.debug('Did not match anything under: %s', hwmon_dir)
 
     return sensors
 
@@ -183,5 +183,4 @@ class NVMeDrive(DriveDevice):
 
         if not self.sensors:
             true_path = nvme_path.joinpath('device').resolve().joinpath(f'nvme/{self.device_name[:-2]}').resolve()
-            for sensor_path in _resolve_direct_sensors_for_hwmon_dir(_match_hwmon_by_device(true_path), 'nvme'):
-                self.sensors.extend(_match_sensor_path(sensor_path))
+            self.sensors.extend(_resolve_direct_sensors_for_hwmon_dir(_match_hwmon_by_device(true_path)))
