@@ -120,7 +120,7 @@ def _match_hwmon_by_device(match_path: Path):
             _hwmon_paths[hwmon_dir.joinpath('device').resolve(True)] = hwmon_dir
 
     for path, hwmon_dir in _hwmon_paths.items():
-        potential_match = set(match_path.parts).difference(path.parts)
+        potential_match = set(match_path.parts).symmetric_difference(path.parts)
         if len(potential_match) < 3:
             return hwmon_dir
 
