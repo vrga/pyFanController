@@ -73,16 +73,25 @@ def create_device(path: Path, sensor_name: str = None):
 
 
 def _resolve_sensors_for_device_path(device_path: Path, expected_sensor_name: str):
+    sensors = []
     for hwmon in device_path.iterdir():
-        yield from _resolve_direct_sensors_for_hwmon_dir(hwmon, expected_sensor_name)
+        sensors.extend(_resolve_direct_sensors_for_hwmon_dir(hwmon, expected_sensor_name))
+    return sensors
 
 
 def _resolve_direct_sensors_for_hwmon_dir(hwmon: Path, expected_sensor_name: str):
+    sensors = []
     hwmon_path = hwmon.joinpath('name')
     if hwmon_path.exists() and hwmon_path.read_text('utf-8') == f'{expected_sensor_name}\n':
         for full_sensor_path in hwmon.iterdir():
             if full_sensor_path.name.startswith('temp') and full_sensor_path.name.endswith('input'):
-                yield full_sensor_path
+                log.debug('Matched path: %s', full_sensor_path)
+                sensors.append(full_sensor_path)
+
+    if not sensors:
+        log.debug('Did not match anything under: %s', hwmon_path)
+
+    return sensors
 
 
 class DriveDevice(InputDevice, ABC):
@@ -109,6 +118,10 @@ class DriveDevice(InputDevice, ABC):
     def get_temp(self) -> float:
         return mean((s.get_temp() for s in self.sensors))
 
+    def _validate(self):
+        if not self.sensors:
+            raise NoSensorsFoundException(f'No sensors found for device: "{self.real_path}"')
+
 
 _hwmon_paths = {}
 
@@ -131,8 +144,7 @@ class ATADrive(DriveDevice):
     def __init__(self, pretty_path: Path, real_path: Path, found_name: str, device_name: str, sensor_name: str = None):
         super().__init__(pretty_path, real_path, found_name, device_name, None)
         self._check_drivetemp()
-        if not self.sensors:
-            raise NoSensorsFoundException(f'No sensors found for device: "{real_path}"')
+        self._validate()
 
     def _check_drivetemp(self):
         device_path = Path(f'/sys/class/block/{self.device_name}/device')
@@ -152,8 +164,7 @@ class NVMeDrive(DriveDevice):
         super().__init__(pretty_path, real_path, found_name, device_name, sensor_name)
         self.sensors: List[LMSensorsInput] = []
         self._populate_sensors()
-        if not self.sensors:
-            raise NoSensorsFoundException(f'No sensors found for device: "{real_path}"')
+        self._validate()
 
     def _populate_sensors(self):
         nvme_path = Path(f'/sys/class/nvme/{self.device_name[:-2]}')
