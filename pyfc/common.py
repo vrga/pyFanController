@@ -64,6 +64,8 @@ def mean(seq: Iterable) -> float:
         raise ValueError('provided sequence MUST be iterable')
     if not isinstance(seq, Sequence):
         seq = list(seq)
+    if len(seq) == 1:
+        return float(seq[0])
     return sum(seq) / len(seq)
 
 

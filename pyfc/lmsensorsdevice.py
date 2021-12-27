@@ -8,6 +8,12 @@ from .tempcontainers import TemperaturesBuffer
 log = logging.getLogger(__name__)
 
 
+def try_and_find_label_for_input(path: Path):
+    label_path = path.parent.joinpath(path.name.replace('_input', '_label'))
+    
+    return label_path.read_text('utf-8').replace('\n', '') if label_path.exists() else path.name
+
+
 class LMSensorsDevice:
     @classmethod
     def from_path(cls):
@@ -45,14 +51,15 @@ class LMSensorsInput(InputDevice, LMSensorsDevice):
 
     @classmethod
     def from_path(cls, sensor_name: str, device_name: str) -> List['LMSensorsInput']:
-        return [cls(path, device_name) for path in cls.path_from_device_name(sensor_name)]
+        return [cls(path.joinpath(device_name)) for path in cls.path_from_device_name(sensor_name)]
 
-    def __init__(self, sensor_path: Path, device_name: str):
+    def __init__(self, sensor_path: Path):
         """
         :param sensor_path: path to lm-sensors file
         """
-        self.path = sensor_path.joinpath(device_name)
-        self.temp = TemperaturesBuffer(self.path)
+        self.path = sensor_path
+        self.name = try_and_find_label_for_input(sensor_path)
+        self.temp = TemperaturesBuffer(self.name)
 
     def get_temp(self) -> float:
         try:
@@ -66,6 +73,9 @@ class LMSensorsInput(InputDevice, LMSensorsDevice):
             return self.temp.mean()
         except ZeroDivisionError:
             return 35.0
+
+    def __repr__(self):
+        return self.name
 
 
 class LMSensorsOutput(OutputDevice, LMSensorsDevice):
