@@ -123,9 +123,10 @@ class ATADrive(DriveDevice):
     def _check_drivetemp(self):
         device_path = Path(f'/sys/class/block/{self.device_name}/device')
         hwmon_path = device_path.joinpath('hwmon')
-        for sensor_path in _resolve_sensors_for_device_path(hwmon_path, 'drivetemp'):
-            self.sensors.append(LMSensorsInput(sensor_path))
-        if not self.sensors:
+        if hwmon_path.exists():
+            for sensor_path in _resolve_sensors_for_device_path(hwmon_path, 'drivetemp'):
+                self.sensors.append(LMSensorsInput(sensor_path))
+        else:
             true_path = device_path.readlink()
             for sensor_path in _resolve_sensors_for_device_path(_match_hwmon_by_device(true_path), 'drivetemp'):
                 self.sensors.append(LMSensorsInput(sensor_path))
@@ -152,8 +153,8 @@ class NVMeDrive(DriveDevice):
                 else:
                     yield LMSensorsInput(sensor_path)
 
-        self.sensors.extend(_match_sensor_path(hwmon_path))
-
-        if not self.sensors:
+        if hwmon_path.exists():
+            self.sensors.extend(_match_sensor_path(hwmon_path))
+        else:
             true_path = device_path.readlink()
             self.sensors.extend(_match_sensor_path(_match_hwmon_by_device(true_path)))
