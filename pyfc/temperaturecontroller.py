@@ -17,8 +17,8 @@ class TemperatureController:
         :param output_devices: Output device to which we set the speed
         :param speeds: tuple of speeds to which we set it.
         """
-        self.inputs = input_devices
-        self.outputs = output_devices
+        self.inputs = [d for d in input_devices if d]
+        self.outputs = [d for d in output_devices if d]
         self.speeds = speeds
 
     def get_speed(self, temp: Union[float, int]):
@@ -46,7 +46,7 @@ class TemperatureController:
 
     def apply_candidates(self):
         return self.outputs
-        
+
     def enable(self):
         for output_dev in self.outputs:
             output_dev.enable()
