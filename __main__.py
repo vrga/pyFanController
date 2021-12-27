@@ -35,15 +35,17 @@ def main():
     device_configuration = {identifier: config[identifier] for identifier in device_identifiers}
     devices = {name: create_device(name, config) for name, config in device_configuration.items()}
 
+    valid_devices = {}
     for name, device in devices.items():
-        if not device.valid():
-            devices.pop(name)
+        if device.valid():
+            valid_devices[name] = device
+        else:
             log.warning('Configured device is not valid, removing controller. %s', name)
 
     fan_control = FanController(
             Path(config['base']['pid_file']).absolute(),
             config['base'].getint('interval', 5),
-            devices
+            valid_devices
     )
     fan_control.run()
 
