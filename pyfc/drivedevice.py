@@ -36,8 +36,8 @@ def from_disk_by_id(disk_name: str, sensor_name: str = None):
 
             if device and device not in devices:
                 devices.append(device)
-        except UnsupportedDeviceTypeException:
-            log.warning('Unsupported device: path "%s", name: "%s"', device_path, disk_name)
+        except UnsupportedDeviceTypeException as e:
+            log.warning('', exc_info=e)
             continue
 
     if devices:
