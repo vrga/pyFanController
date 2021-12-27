@@ -2,8 +2,7 @@ import logging
 from pathlib import Path
 from typing import List
 
-from .common import InputDevice, OutputDevice, lerp, mean
-from .tempcontainers import TemperaturesBuffer
+from .common import InputDevice, OutputDevice, lerp, mean, ValueBuffer
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +58,7 @@ class LMSensorsInput(InputDevice, LMSensorsDevice):
         """
         self.path = sensor_path
         self.name = try_and_find_label_for_input(sensor_path)
-        self.temp = TemperaturesBuffer(self.name)
+        self.temp = ValueBuffer(self.name, 35)
 
     def get_temp(self) -> float:
         try:
@@ -122,11 +121,11 @@ class LMSensorsOutput(OutputDevice, LMSensorsDevice):
             log.exception('Error writing to enabling file: %s', self.enable_file)
             self.enabled = False
 
-    def _apply(self):
+    def apply(self):
         if not self.enabled:
             return
 
-        speed = round(mean(self.speeds))
+        speed = round(self.speeds.mean())
         try:
             log.debug('Speed for device: %s set to %s', self.output_file, int(lerp(speed, 0, 255, 0, 100)))
             with open(self.output_file, 'a') as writer:

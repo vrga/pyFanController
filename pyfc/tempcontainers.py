@@ -1,27 +1,14 @@
 from typing import Dict
 
-from .common import mean
+from .common import mean, ValueBuffer
 
 from datetime import datetime, timezone, timedelta
-from collections import deque
-
-
-class TemperaturesBuffer:
-    def __init__(self, name):
-        self.name = name
-        self.buffer = deque(maxlen=32)
-
-    def update(self, value: float):
-        self.buffer.append(value)
-
-    def mean(self) -> float:
-        return mean(self.buffer)
 
 
 class TemperatureGroup:
     def __init__(self, name, time_read_sec=1):
         self.name = name
-        self.data: Dict[str, TemperaturesBuffer] = {}
+        self.data: Dict[str, ValueBuffer] = {}
         self.last_update = datetime.now(tz=timezone.utc) - timedelta(seconds=10)
         self.time_read = timedelta(seconds=time_read_sec)
 
@@ -33,7 +20,7 @@ class TemperatureGroup:
 
     def update(self, name, device):
         if name not in self.data:
-            self.data[name] = TemperaturesBuffer(name)
+            self.data[name] = ValueBuffer(name, 35)
 
         self.data[name].update(device)
         self.last_update = datetime.now(timezone.utc)

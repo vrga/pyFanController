@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from collections import deque
 from typing import List, Union, Iterable, Sequence
 
 
@@ -22,17 +23,13 @@ class OutputDevice(metaclass=ABCMeta):
     """
 
     def __init__(self):
-        self.speeds = []
+        self.speeds = ValueBuffer('', 128)
 
     def set_speed(self, speed: Union[int, float]):
-        self.speeds.append(round(speed))
-
-    def apply(self):
-        self._apply()
-        self.speeds.clear()
+        self.speeds.update(speed)
 
     @abstractmethod
-    def _apply(self):
+    def apply(self):
         raise NotImplementedError
 
     @abstractmethod
@@ -61,9 +58,9 @@ class DummyOutput(OutputDevice):
         self.speed = None
         self.enabled = False
 
-    def _apply(self):
+    def apply(self):
         if self.enabled:
-            self.speed = round(mean(self.speeds))
+            self.speed = round(self.speeds.mean())
 
     def enable(self):
         self.enabled = True
@@ -94,3 +91,19 @@ def lerp(value: Union[float, int], input_min: Union[float, int], input_max: Unio
 
 def lerp_range(seq: Iterable[Union[float, int]], input_min, input_max, output_min, output_max) -> List[float]:
     return [lerp(val, input_min, input_max, output_min, output_max) for val in seq]
+
+
+class ValueBuffer:
+    def __init__(self, name, default_value=0.0):
+        self.name = name
+        self.buffer = deque(maxlen=32)
+        self._default_value = default_value
+
+    def update(self, value: float):
+        self.buffer.append(value)
+
+    def mean(self) -> float:
+        try:
+            return mean(self.buffer)
+        except ZeroDivisionError:
+            return self._default_value

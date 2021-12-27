@@ -28,14 +28,14 @@ class SerialOutput(OutputDevice):
         except SerialException:
             self.serial_available = False
 
-    def _apply(self):
+    def apply(self):
         """
         Open serial interface, convert to byte, write data, close serial interface.
         Pray to satan nothing blows up.
         :param speed: speed to set
         :type speed: int
         """
-        speed = round(mean(self.speeds))
+        speed = round(self.speeds.mean())
         if self.serial_available:
             try:
                 self.serial.open()
