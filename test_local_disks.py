@@ -11,7 +11,7 @@ sensors = set(sensors)
 readings = {}
 for _ in range(15):
     for t in sensors:
-        devs = t.found_name
+        devs = t.device_name
         if devs not in readings:
             readings[devs] = deque(maxlen=32)
 
