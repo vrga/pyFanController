@@ -160,10 +160,10 @@ class NVMeDrive(DriveDevice):
 
         def _match_sensor_path(path: Path):
             if self.sensor_name:
-                if try_and_find_label_for_input(sensor_path) == self.sensor_name:
-                    yield LMSensorsInput(sensor_path)
+                if try_and_find_label_for_input(path) == self.sensor_name:
+                    yield LMSensorsInput(path)
             else:
-                yield LMSensorsInput(sensor_path)
+                yield LMSensorsInput(path)
 
         for nvme_dir in nvme_path.iterdir():
             if nvme_dir.name.startswith('hwmon'):
