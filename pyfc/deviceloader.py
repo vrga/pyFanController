@@ -13,16 +13,14 @@ log = logging.getLogger(__name__)
 
 
 def generate_component_temp(input_config: SectionProxy) -> List[LMSensorsInput]:
-    specific_devices = [k.strip() for k in input_config.get('temperatureMonitorDeviceName').split(',')]
-    for idx, path in enumerate([k.strip() for k in input_config.get('temperatureMonitor').split(',')]):
+    specific_devices = input_config.getlist('temperatureMonitorDeviceName')
+    for idx, path in enumerate(input_config.getlist('temperatureMonitor')):
         for s in LMSensorsInput.from_path(specific_devices[idx], path):
             yield s
 
 
 def generate_hddtemp(input_config: SectionProxy) -> List[HDDTemp]:
-    specific_devices = input_config.get('hddtempDevices', None)
-    if specific_devices is not None:
-        specific_devices = specific_devices.split(',')
+    specific_devices = input_config.getlist('hddtempDevices', None)
     yield HDDTemp(
             input_config.get('hddtempHost', 'localhost'),
             int(input_config.get('hddtempPort', '7634')),
@@ -31,11 +29,11 @@ def generate_hddtemp(input_config: SectionProxy) -> List[HDDTemp]:
 
 
 def generate_drive(input_config: SectionProxy) -> List[DriveDevice]:
-    specific_devices = input_config.get('diskIDs').split(',')
-    target_sensor_names = input_config.get('diskSensors', None)
+    specific_devices = input_config.getlist('diskIDs')
+    target_sensor_names = input_config.getlist('diskSensors', None)
     devices = []
     for device_id in specific_devices:
-        devices.extend(from_disk_by_id(device_id, target_sensor_names.split(',') if target_sensor_names else None))
+        devices.extend(from_disk_by_id(device_id, [s.strip() for s in target_sensor_names.split(',')] if target_sensor_names else None))
 
     return list(set(devices))
 
@@ -52,7 +50,6 @@ def determine_inputs(device_config: SectionProxy) -> List[InputDevice]:
     except (KeyError, FileNotFoundError):
         log.error('Failed creating device!', exc_info=True)
         return []
-
 
 
 def determine_outputs(device_config: SectionProxy) -> List[OutputDevice]:

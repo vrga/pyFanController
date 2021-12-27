@@ -21,7 +21,7 @@ def main():
 
     work_dir = os.environ.get('PYFC_WORK_DIR', Path(__file__).absolute().parent)
     config_path = os.environ.get('PYFC_CONFIG_PATH', Path(work_dir).joinpath('settings.ini'))
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]})
     config.read(config_path)
 
     if config['log']['path'] == 'stdout':
