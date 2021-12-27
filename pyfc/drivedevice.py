@@ -50,8 +50,8 @@ def create_device(path: Path, sensor_name: str = None):
     regex = r'^(.*?)-(.*)(?:-part\d+)?$'
     matches = re.match(regex, path.name)
 
-    device_type = matches.group(0)
-    found_name = matches.group(1)
+    device_type = matches.group(1)
+    found_name = matches.group(2)
     real_path = path.resolve(True)
     device_name = real_path.name
 
