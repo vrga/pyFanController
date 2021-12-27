@@ -86,7 +86,7 @@ def _resolve_direct_sensors_for_hwmon_dir(hwmon_dir: Path):
     for full_sensor_path in hwmon_dir.iterdir():
         if full_sensor_path.name.startswith('temp') and full_sensor_path.name.endswith('input'):
             log.debug('Matched path: %s', full_sensor_path)
-            sensors.append(LMSensorsInput(full_sensor_path))
+            sensors.append(full_sensor_path)
 
     if not sensors:
         log.debug('Did not match anything under: %s', hwmon_dir)
@@ -183,4 +183,5 @@ class NVMeDrive(DriveDevice):
 
         if not self.sensors:
             true_path = nvme_path.joinpath('device').resolve().joinpath(f'nvme/{self.device_name[:-2]}').resolve()
-            self.sensors.extend(_resolve_direct_sensors_for_hwmon_dir(_match_hwmon_by_device(true_path)))
+            for sensor_path in _resolve_direct_sensors_for_hwmon_dir(_match_hwmon_by_device(true_path)):
+                self.sensors.extend(_match_sensor_path(sensor_path))
