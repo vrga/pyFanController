@@ -76,12 +76,15 @@ class PassthroughController(Controller):
             output.name = input_reader.name
             output.values.name = input_reader.name
             output.set_value(input_reader.get_value())
+            output.apply()
 
     def enable(self):
-        pass
+        for output_dev in self.outputs:
+            output_dev.enable()
 
     def disable(self):
-        pass
+        for output_dev in self.outputs:
+            output_dev.disable()
 
     def valid(self) -> bool:
         return bool(self.inputs and self.outputs) and len(self.inputs) == len(self.outputs)
