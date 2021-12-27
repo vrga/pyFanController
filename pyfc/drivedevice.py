@@ -182,6 +182,6 @@ class NVMeDrive(DriveDevice):
                     self.sensors.extend(_match_sensor_path(sensor_path))
 
         if not self.sensors:
-            true_path = nvme_path.joinpath('device').resolve().joinpath(f'nvme/{self.device_name[:-2]}').resolve()
+            true_path = nvme_path.joinpath('device').resolve()
             for sensor_path in _resolve_direct_sensors_for_hwmon_dir(_match_hwmon_by_device(true_path)):
                 self.sensors.extend(_match_sensor_path(sensor_path))
