@@ -1,60 +1,16 @@
 import logging
 import socket
-from datetime import datetime, timezone, timedelta
-from collections import deque
+
 from typing import Dict
 
 from .common import InputDevice, mean
+from .tempcontainers import TemperatureGroup
 
 log = logging.getLogger(__name__)
 
 
-class TemperaturesBuffer:
-    def __init__(self, name):
-        self.name = name
-        self.buffer = deque(maxlen=32)
-
-    def update(self, value: float):
-        self.buffer.append(mean((value, self.mean())))
-
-    def mean(self) -> float:
-        try:
-            return mean(self.buffer)
-        except ZeroDivisionError:
-            return 35.0
-
-
-class TempGroup:
-    def __init__(self, name, time_read_sec=1):
-        self.name = name
-        self.data: Dict[str, TemperaturesBuffer] = {}
-        self.last_update = datetime.now(tz=timezone.utc) - timedelta(seconds=10)
-        self.time_read = timedelta(seconds=time_read_sec)
-
-    def updateable(self):
-        if datetime.now(timezone.utc) - self.last_update > self.time_read:
-            return True
-
-        return False
-
-    def update(self, name, device):
-        if name not in self.data:
-            self.data[name] = TemperaturesBuffer(name)
-
-        self.data[name].update(device)
-        self.last_update = datetime.now(timezone.utc)
-
-    def mean(self, device) -> float:
-        try:
-            if device is None:
-                return mean(buffer.mean() for buffer in self.data.values())
-            return self.data[device].mean()
-        except (KeyError, ZeroDivisionError):
-            return 35.0
-
-
 class HDDTemp(InputDevice):
-    _temps: Dict[str, TempGroup] = {}
+    _temps: Dict[str, TemperatureGroup] = {}
 
     """
     Class to access hddtemp data, through the daemon hddtemp uses.
@@ -72,9 +28,9 @@ class HDDTemp(InputDevice):
         self._time_read_sec = time_read_sec
 
     @property
-    def temps(self) -> TempGroup:
+    def temps(self) -> TemperatureGroup:
         if self.group_name not in self._temps:
-            self._temps[self.group_name] = TempGroup(self.group_name, self._time_read_sec)
+            self._temps[self.group_name] = TemperatureGroup(self.group_name, self._time_read_sec)
         return self._temps[self.group_name]
 
     @property
@@ -94,7 +50,7 @@ class HDDTemp(InputDevice):
         If the daemon itself returns proper data that is.
         If data cannot be read, assume the temperature is around 35°C.
         """
-        if self.temps.updateable():
+        if self.temps.updatable():
             self.read_data()
 
         return round(self.get_mean_temp(), None)
