@@ -12,41 +12,49 @@ log = logging.getLogger(__name__)
 class TemperaturesBuffer:
     def __init__(self, name):
         self.name = name
-        self._buffer = deque(maxlen=32)
+        self.buffer = deque(maxlen=32)
 
     def update(self, value: float):
-        self._buffer.append(mean((value, self.mean())))
+        self.buffer.append(mean((value, self.mean())))
 
     def mean(self) -> float:
         try:
-            return mean(self._buffer)
+            return mean(self.buffer)
         except ZeroDivisionError:
             return 35.0
 
 
 class TempGroup:
-    def __init__(self, name):
+    def __init__(self, name, time_read_sec=1):
         self.name = name
-        self._data: Dict[str, TemperaturesBuffer] = {}
+        self.data: Dict[str, TemperaturesBuffer] = {}
+        self.last_update = datetime.now(tz=timezone.utc) - timedelta(seconds=10)
+        self.time_read = timedelta(seconds=time_read_sec)
+
+    def updateable(self):
+        if datetime.now(timezone.utc) - self.last_update > self.time_read:
+            return True
+
+        return False
 
     def update(self, name, device):
-        if name not in self._data:
-            self._data[name] = TemperaturesBuffer(name)
+        if name not in self.data:
+            self.data[name] = TemperaturesBuffer(name)
 
-        self._data[name].update(device)
+        self.data[name].update(device)
+        self.last_update = datetime.now(timezone.utc)
 
     def mean(self, device) -> float:
         try:
             if device is None:
-                return mean(buffer.mean() for buffer in self._data.values())
-            return self._data[device].mean()
+                return mean(buffer.mean() for buffer in self.data.values())
+            return self.data[device].mean()
         except (KeyError, ZeroDivisionError):
             return 35.0
 
 
 class HDDTemp(InputDevice):
-    temps: Dict[str, TempGroup] = {}
-    last_read: datetime = datetime.fromtimestamp(-10, timezone.utc)
+    _temps: Dict[str, TempGroup] = {}
 
     """
     Class to access hddtemp data, through the daemon hddtemp uses.
@@ -54,17 +62,20 @@ class HDDTemp(InputDevice):
     on the localhost with the default port.
     """
 
-    def __init__(self, host='127.0.0.1', port=7634, devices=None, time_read_sec=1):
+    def __init__(self, host='127.0.0.1', port=7634, devices=None, time_read_sec: int = 1):
         self.devices = devices if devices else [None]
 
         self.host = host
         self.port = port
 
-        if self.group_name not in self.temps:
-            self.temps[self.group_name] = TempGroup(self.group_name)
-
-        self.time_read = timedelta(seconds=time_read_sec)
         self.available = False
+        self._time_read_sec = time_read_sec
+
+    @property
+    def temps(self) -> TempGroup:
+        if self.group_name not in self._temps:
+            self._temps[self.group_name] = TempGroup(self.group_name, self._time_read_sec)
+        return self._temps[self.group_name]
 
     @property
     def group_name(self):
@@ -72,7 +83,7 @@ class HDDTemp(InputDevice):
 
     def get_mean_temp(self) -> float:
         try:
-            return mean((self.temps[self.group_name].mean(device) for device in self.devices))
+            return mean((self.temps.mean(device) for device in self.devices))
         except ZeroDivisionError:
             return 35.0
 
@@ -83,10 +94,8 @@ class HDDTemp(InputDevice):
         If the daemon itself returns proper data that is.
         If data cannot be read, assume the temperature is around 35°C.
         """
-        now = datetime.now(timezone.utc)
-        if now - self.last_read > self.time_read:
+        if self.temps.updateable():
             self.read_data()
-            self.last_read = now
 
         return round(self.get_mean_temp(), None)
 
@@ -115,7 +124,7 @@ class HDDTemp(InputDevice):
                 splitted = temp.split('|')
                 device_name = splitted[1]
                 temperature = float(temp.split('|')[2])
-                self.temps[self.group_name].update(device_name, temperature)
+                self.temps.update(device_name, temperature)
             except (IndexError, ValueError):
                 continue
             except:
