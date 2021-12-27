@@ -147,8 +147,7 @@ class NVMeDrive(DriveDevice):
             raise NoSensorsFoundException(f'No sensors found for device: "{real_path}"')
 
     def _populate_sensors(self):
-        device_path = Path(f'/sys/class/nvme/{self.device_name[:-2]}/device')
-        hwmon_path = device_path.joinpath('hwmon')
+        nvme_path = Path(f'/sys/class/nvme/{self.device_name[:-2]}')
 
         def _match_sensor_path(path: Path):
             for sensor_path in _resolve_sensors_for_device_path(path, 'nvme'):
@@ -158,8 +157,10 @@ class NVMeDrive(DriveDevice):
                 else:
                     yield LMSensorsInput(sensor_path)
 
-        if hwmon_path.exists():
-            self.sensors.extend(_match_sensor_path(hwmon_path))
-        else:
-            true_path = device_path.resolve()
+        for nvme_dir in nvme_path.iterdir():
+            if nvme_dir.name.startswith('hwmon'):
+                self.sensors.extend(_match_sensor_path(nvme_dir))
+
+        if not self.sensors:
+            true_path = nvme_path.joinpath('device').resolve().joinpath(f'nvme/{self.device_name[:-2]}').resolve()
             self.sensors.extend(_match_sensor_path(_match_hwmon_by_device(true_path)))
