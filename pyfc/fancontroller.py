@@ -12,7 +12,7 @@ from .temperaturecontroller import TemperatureController
 
 
 class FanController:
-    def __init__(self, pid_file: Path, interval: int, devices: Dict[str, TemperatureController]):
+    def __init__(self, pid_file: Path, interval: float, devices: Dict[str, TemperatureController]):
         self.pid_file = pid_file
         self.interval = interval
         self.devices = devices
@@ -72,6 +72,8 @@ class FanController:
                     o.apply()
 
                 time.sleep(self.interval)
+            except KeyboardInterrupt:
+                self.runnable = False
             except Exception as e:
                 logging.exception('Caught exception, bailing.')
                 self.runnable = False
@@ -85,5 +87,6 @@ class FanController:
         try:
             self.create_pid()
             self.start()
+
         finally:
             self.remove_pid()

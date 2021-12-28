@@ -44,7 +44,7 @@ def main():
 
     fan_control = FanController(
             Path(config['base']['pid_file']).absolute(),
-            config['base'].getint('interval', 5),
+            config['base'].getfloat('interval', 5.0),
             valid_devices
     )
     fan_control.run()

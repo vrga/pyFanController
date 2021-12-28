@@ -1,6 +1,9 @@
+import logging
 from abc import ABCMeta, abstractmethod
 from collections import deque
 from typing import List, Union, Iterable, Sequence
+
+log = logging.getLogger(__name__)
 
 
 class NoSensorsFoundException(RuntimeError):
@@ -66,9 +69,9 @@ class OutputDevice(metaclass=ABCMeta):
 
 class PassthroughController(Controller):
 
-    def __init__(self, inputs=Sequence[InputDevice], outputs=Sequence[OutputDevice]):
-        self.inputs: Sequence[InputDevice] = inputs
-        self.outputs: Sequence[OutputDevice] = outputs
+    def __init__(self, inputs=Sequence[InputDevice], outputs=Sequence[OutputDevice], speeds=None):
+        self.inputs = list(inputs)
+        self.outputs = list(outputs)
 
     def run(self):
         for idx, input_reader in enumerate(self.inputs):
@@ -77,6 +80,10 @@ class PassthroughController(Controller):
             output.values.name = input_reader.name
             output.set_value(input_reader.get_value())
             output.apply()
+        log.debug('ran loop')
+
+    def apply_candidates(self):
+        return self.outputs
 
     def enable(self):
         for output_dev in self.outputs:

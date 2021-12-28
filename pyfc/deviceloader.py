@@ -2,7 +2,7 @@ import logging
 from typing import List, Iterable
 from configparser import SectionProxy
 
-from .common import InputDevice, OutputDevice, lerp_range
+from .common import InputDevice, OutputDevice, lerp_range, PassthroughController
 from .drivedevice import DriveDevice, from_disk_by_id
 from .influxoutput import InfluxLineOutput
 from .temperaturecontroller import TemperatureController
@@ -16,8 +16,7 @@ log = logging.getLogger(__name__)
 def generate_component_temp_input(input_config: SectionProxy) -> Iterable[LMSensorsTempInput]:
     specific_devices = input_config.getlist('temperatureMonitorDeviceName')
     for idx, path in enumerate(input_config.getlist('temperatureMonitor')):
-        for s in LMSensorsTempInput.from_path(specific_devices[idx], path):
-            yield s
+        yield from LMSensorsTempInput.from_path(specific_devices[idx], path)
 
 
 def generate_hddtemp_input(input_config: SectionProxy) -> Iterable[HDDTemp]:
@@ -105,10 +104,17 @@ def create_device(device_name: str, device_config: SectionProxy) -> TemperatureC
     """
     log.debug('Assembling device: %s', device_name)
 
-    device = TemperatureController(
+    controller_map = {
+        'temperature': TemperatureController,
+        'passthrough': PassthroughController,
+    }
+
+    controller_class = controller_map[device_config.get('controllerType', 'temperature')]
+
+    device = controller_class(
             determine_inputs(device_config),
             determine_outputs(device_config),
-            interpolate_temps(device_config)
+            interpolate_temps(device_config) if 'temps' in device_config else None
     )
 
     return device
