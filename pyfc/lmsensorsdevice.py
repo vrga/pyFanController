@@ -67,7 +67,7 @@ class LMSensorsTempInput(InputDevice, LMSensorsDevice):
                 floatable = '{}.{}'.format(value[:-4], value[-4:])
                 self.temp.update(float(floatable))
         except IOError:
-            log.error('Could not read file: {}', self.path)
+            log.exception('Could not read file: {}', self.path)
         try:
             return self.temp.mean()
         except ZeroDivisionError:
