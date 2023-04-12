@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 def try_and_find_label_for_input(path: Path):
     label_path = path.parent.joinpath(path.name.replace('_input', '_label'))
-    
+
     return label_path.read_text('utf-8').replace('\n', '') if label_path.exists() else path.name
 
 
@@ -27,7 +27,7 @@ class LMSensorsDevice:
         matching_paths = []
         for device_dir in device_path.iterdir():
             potential_device_path = device_dir.joinpath('name')
-            with open(potential_device_path, 'r') as potential_file:
+            with potential_device_path.open('r') as potential_file:
                 matches = potential_file.read().startswith(device_name)
             log.debug('in dir %s, potential device path: %s, matches: %s', device_dir, potential_device_path, matches)
 
@@ -62,7 +62,7 @@ class LMSensorsTempInput(InputDevice, LMSensorsDevice):
 
     def get_value(self) -> float:
         try:
-            with open(self.path, 'r') as reader:
+            with self.path.open('r') as reader:
                 value = reader.read()
                 floatable = '{}.{}'.format(value[:-4], value[-4:])
                 self.temp.update(float(floatable))
@@ -101,7 +101,7 @@ class LMSensorsOutput(OutputDevice, LMSensorsDevice):
         so we can at least attempt to be nice about this.
         """
         try:
-            with open(self.enable_file, 'r') as reader:
+            with self.enable_file.open('r') as reader:
                 self.old_value = str(reader.read(1))
         except (IOError, PermissionError):
             self.old_value = '2'
@@ -114,7 +114,7 @@ class LMSensorsOutput(OutputDevice, LMSensorsDevice):
         self.get_old_value()
         log.debug('writing to enabler: %s', self.enable_file)
         try:
-            with open(self.enable_file, 'w') as writer:
+            with self.enable_file.open('w') as writer:
                 writer.write('1')
             self.enabled = True
         except (IOError, PermissionError):
@@ -128,7 +128,7 @@ class LMSensorsOutput(OutputDevice, LMSensorsDevice):
         speed = round(self.values.mean())
         try:
             log.debug('Speed for device: %s set to %s', self.output_file, int(lerp(speed, 0, 255, 0, 100)))
-            with open(self.output_file, 'a') as writer:
+            with self.output_file.open('a') as writer:
                 writer.write(str(speed))
         except (IOError, PermissionError):
             log.exception('Error writing speed to device: %s', self.output_file)
@@ -138,7 +138,7 @@ class LMSensorsOutput(OutputDevice, LMSensorsDevice):
         disable the device.
         """
         try:
-            with open(self.enable_file, 'w') as writer:
+            with self.enable_file.open('w') as writer:
                 writer.write(self.old_value)
         except (IOError, PermissionError):
             log.exception('Error writing to enabling file: %s', self.enable_file)
